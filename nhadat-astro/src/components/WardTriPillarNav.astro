@@ -1,0 +1,88 @@
+---
+interface Props {
+  provinceSlug: string;
+  provinceName: string;
+  wardSlug: string;
+  wardName: string;
+  activeTab: 'gia-dat' | 'quy-hoach' | 'sap-nhap';
+}
+
+const { provinceSlug, provinceName, wardSlug, wardName, activeTab } = Astro.props;
+
+const pillars = [
+  {
+    id: 'gia-dat',
+    name: 'Bảng Giá Đất 2026',
+    icon: '💰',
+    badge: 'Thị Trường & NN',
+    href: `/gia-dat/${provinceSlug}/${wardSlug}`,
+    description: 'Chỉ số giá đất, định giá và khung thuế',
+  },
+  {
+    id: 'quy-hoach',
+    name: 'Bản Đồ Quy Hoạch',
+    icon: '🗺️',
+    badge: 'GeoServer GIS',
+    href: `/quy-hoach/${provinceSlug}/${wardSlug}`,
+    description: 'Phân khu 1/2000 & ranh thửa địa chính',
+  },
+  {
+    id: 'sap-nhap',
+    name: 'Sáp Nhập 2025',
+    icon: '🏛️',
+    badge: 'Nghị Quyết UBTVQH',
+    href: `/sap-nhap-hanh-chinh/${provinceSlug}/${wardSlug}`,
+    description: 'Đơn vị cũ sáp nhập & pháp lý sổ đỏ',
+  },
+];
+---
+
+<div class="bg-white rounded-2xl border border-slate-200 p-2 shadow-sm my-6">
+  <div class="flex flex-col sm:flex-row items-center justify-between px-3 py-2 border-b border-slate-100 mb-2 gap-2">
+    <div class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+      <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Hệ Thống 3 Trụ Cột Dữ Liệu</span>
+      <span class="text-xs text-slate-400">|</span>
+      <span class="text-xs font-semibold text-brand-600">{wardName} ({provinceName})</span>
+    </div>
+    <span class="text-[11px] text-slate-500 hidden md:inline">Đồng bộ liên thông dữ liệu GIS & Pháp lý</span>
+  </div>
+
+  <nav class="grid grid-cols-1 sm:grid-cols-3 gap-2" aria-label="Điều hướng 3 trụ cột địa chính">
+    {pillars.map((p) => {
+      const isActive = p.id === activeTab;
+      return (
+        <a
+          href={p.href}
+          class={`flex flex-col p-3 rounded-xl transition-all ${
+            isActive
+              ? 'bg-gradient-to-r from-brand-600 to-brand-700 text-white shadow-md shadow-brand-600/25 ring-2 ring-brand-500'
+              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 hover:border-slate-300'
+          }`}
+          aria-current={isActive ? 'page' : undefined}
+        >
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-base sm:text-lg">{p.icon}</span>
+              <span class={`font-bold text-xs sm:text-sm ${isActive ? 'text-white' : 'text-slate-900'}`}>
+                {p.name}
+              </span>
+            </div>
+            <span
+              class={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                isActive
+                  ? 'bg-white/20 text-white'
+                  : 'bg-white text-brand-700 border border-slate-200'
+              }`}
+            >
+              {p.badge}
+            </span>
+          </div>
+          <p class={`text-[11px] mt-1 pl-6 line-clamp-1 ${isActive ? 'text-brand-100' : 'text-slate-500'}`}>
+            {p.description}
+          </p>
+        </a>
+      );
+    })}
+  </nav>
+</div>

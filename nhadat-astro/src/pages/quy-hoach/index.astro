@@ -1,0 +1,122 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import CadastralMapIsland from '../../components/islands/CadastralMapIsland.astro';
+import { getProvinces } from '../../lib/api';
+import { LAND_CODES } from '../../lib/constants/landCodes';
+import { generateWebApplicationSchema } from '../../lib/seo';
+
+const provinces = await getProvinces();
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateWebApplicationSchema(
+  'Bản Đồ Quy Hoạch Sử Dụng Đất & Địa Chính Toàn Quốc 2030',
+  'Tra cứu bản đồ quy hoạch sử dụng đất trực tuyến 34 tỉnh thành Việt Nam. Kiểm tra quy hoạch chi tiết 1/500, phân khu 1/2000 và thông tin thửa đất.',
+  '/quy-hoach',
+  'GISApplication',
+  siteUrl
+);
+---
+
+<BaseLayout
+  title="Bản Đồ Quy Hoạch Sử Dụng Đất & Địa Chính Toàn Quốc 2030"
+  description="Tra cứu bản đồ quy hoạch xây dựng và sử dụng đất 34 tỉnh thành sau sáp nhập 2025. Tích hợp dữ liệu GeoServer WMS, phân định ranh giới thửa đất và mã loại đất ODT, ONT, CLN."
+  schema={schema}
+>
+  <div class="bg-slate-900 text-white py-10 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[{ name: 'Quy Hoạch Địa Chính', url: '/quy-hoach' }]} />
+      </div>
+
+      <div class="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
+            <span>Hệ Thống Thông Tin Địa Lý GIS 2.0</span>
+            <span class="w-1 h-1 rounded-full bg-brand-400"></span>
+            <span>Google Maps & GeoServer GIS</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            Bản Đồ Quy Hoạch Địa Chính Toàn Quốc
+          </h1>
+          <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+            Kiểm tra thông tin quy hoạch sử dụng đất đến năm 2030, tầm nhìn 2050 theo Nghị quyết HĐND và phê duyệt của Thủ tướng Chính phủ.
+          </p>
+        </div>
+
+        <div>
+          <a
+            href="/cong-cu/chuyen-toa-do-vn2000"
+            class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-semibold text-white transition-colors shadow-sm inline-flex items-center gap-1.5"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            </svg>
+            Nhập Tọa Độ Sổ Đỏ
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+    <!-- Main Interactive Map Island -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Bản Đồ Không Gian Địa Chính Toàn Quốc</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Nhấp vào thửa đất để xem số tờ, số thửa và quy hoạch chi tiết</p>
+        </div>
+        <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+          Trực Tuyến 24/7
+        </span>
+      </div>
+
+      <CadastralMapIsland lat={21.0285} lon={105.8542} zoom={12} provinceName="Hà Nội & Toàn Quốc" />
+    </div>
+
+    <!-- Planning Legend Matrix (52 Land Codes) -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Bảng Chú Giải Màu Sắc Quy Hoạch (52 Loại Đất)</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Quy chuẩn thể hiện màu ký hiệu theo Thông tư 25/2014/TT-BTNMT</p>
+        </div>
+        <a href="/ma-loai-dat" class="text-xs font-semibold text-brand-600 hover:underline">
+          Xem từ điển 52 mã đất &rarr;
+        </a>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
+        {LAND_CODES.slice(0, 18).map((code) => (
+          <a
+            href={`/ma-loai-dat/${code.code.toLowerCase()}`}
+            class="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/60 transition-all"
+          >
+            <span class="w-4 h-4 rounded flex-shrink-0" style={`background-color: ${code.color_hex}`}></span>
+            <div class="truncate">
+              <strong class="font-mono text-slate-900 block">{code.code}</strong>
+              <span class="text-[11px] text-slate-500 truncate block">{code.name}</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- Provinces Planning Maps List -->
+    <div class="space-y-4">
+      <h3 class="text-base font-bold text-slate-900">Tra Cứu Bản Đồ Quy Hoạch Theo Tỉnh Thành</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 text-xs">
+        {provinces.map((p) => (
+          <a
+            href={`/quy-hoach/${p.slug}`}
+            class="p-3 rounded-xl bg-white border border-slate-200 hover:border-brand-500/50 hover:shadow-sm transition-all"
+          >
+            <div class="font-semibold text-slate-900">{p.name}</div>
+            <div class="text-[11px] text-slate-400 mt-1">{p.ward_count} xã/phường</div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+</BaseLayout>

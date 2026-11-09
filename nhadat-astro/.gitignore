@@ -1,0 +1,12 @@
+# Build & Dependencies
+node_modules/
+dist/
+.astro/
+
+# Environment files
+.env.local
+.env.*.local
+
+# OS Files
+.DS_Store
+Thumbs.db

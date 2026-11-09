@@ -1,0 +1,46 @@
+---
+import JsonLd from './JsonLd.astro';
+import { generateBreadcrumbSchema } from '../lib/seo';
+
+interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
+
+interface Props {
+  items: BreadcrumbItem[];
+}
+
+const { items } = Astro.props;
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const allItems = [{ name: 'Trang chủ', url: '/' }, ...items];
+const schema = generateBreadcrumbSchema(allItems, siteUrl);
+---
+
+<nav aria-label="Breadcrumb" class="py-3 px-4 sm:px-0">
+  <ol class="flex items-center flex-wrap gap-1.5 text-xs text-slate-500">
+    {allItems.map((item, index) => {
+      const isLast = index === allItems.length - 1;
+      return (
+        <li class="flex items-center gap-1.5">
+          {index > 0 && (
+            <svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          )}
+          {isLast ? (
+            <span class="font-medium text-slate-900 truncate max-w-[200px] sm:max-w-xs" aria-current="page">
+              {item.name}
+            </span>
+          ) : (
+            <a href={item.url} class="hover:text-brand-600 transition-colors">
+              {item.name}
+            </a>
+          )}
+        </li>
+      );
+    })}
+  </ol>
+</nav>
+
+<JsonLd schema={schema} />

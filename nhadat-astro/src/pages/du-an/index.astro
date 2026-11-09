@@ -1,0 +1,208 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { getProjectsFiltered, getProvinces } from '../../lib/api';
+import { formatNumber, formatPricePerM2 } from '../../lib/formatters';
+import { generateDatasetSchema } from '../../lib/seo';
+
+const provinceFilter = Astro.url.searchParams.get('province') || '';
+const qFilter = Astro.url.searchParams.get('q') || '';
+const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1', 10));
+const limit = 24;
+
+const { total, projects } = await getProjectsFiltered({
+  province: provinceFilter,
+  q: qFilter,
+  page,
+  limit,
+});
+const provinces = await getProvinces();
+const totalPages = Math.ceil(total / limit);
+
+const popularProvincePills = [
+  { name: 'Tất cả', slug: '' },
+  { name: 'Hà Nội', slug: 'ha-noi' },
+  { name: 'TP.HCM', slug: 'ho-chi-minh' },
+  { name: 'Đà Nẵng', slug: 'da-nang' },
+  { name: 'Hải Phòng', slug: 'hai-phong' },
+  { name: 'Đồng Nai', slug: 'dong-nai' },
+  { name: 'Khánh Hòa', slug: 'khanh-hoa' },
+  { name: 'Bắc Ninh', slug: 'bac-ninh' },
+  { name: 'Hưng Yên', slug: 'hung-yen' },
+  { name: 'Cần Thơ', slug: 'can-tho' },
+  { name: 'Lâm Đồng', slug: 'lam-dong' },
+];
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateDatasetSchema(
+  'Từ Điển 4.550+ Dự Án Bất Động Sản Toàn Quốc (Quy Hoạch & Pháp Lý)',
+  'Cơ sở dữ liệu bách khoa toàn thư dự án khu đô thị, căn hộ chung cư, biệt thự nghỉ dưỡng tại Việt Nam. Thông tin chủ đầu tư, tiến độ, giá bán và pháp lý.',
+  '/du-an',
+  siteUrl
+);
+---
+
+<BaseLayout
+  title="Từ Điển 4.550+ Dự Án Bất Động Sản Toàn Quốc — Pháp Lý & Giá Bán 2026"
+  description="Tra cứu bách khoa toàn thư hơn 4.550 dự án bất động sản trên toàn quốc. Đầy đủ thông tin chủ đầu tư, quy mô diện tích, mật độ xây dựng, giá bán tham chiếu và tình trạng pháp lý Sổ hồng."
+  schema={schema}
+>
+  <div class="bg-slate-900 text-white py-12 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[{ name: 'Dự Án Bất Động Sản', url: '/du-an' }]} />
+      </div>
+
+      <div class="mt-4 max-w-3xl">
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
+          <span>{formatNumber(total)} Dự Án Khả Dụng</span>
+          <span class="w-1 h-1 rounded-full bg-brand-400"></span>
+          <span>Bản Đồ Vị Trí GIS</span>
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+          Từ Điển Dự Án Bất Động Sản Toàn Quốc
+        </h1>
+        <p class="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed">
+          Tra cứu hồ sơ pháp lý, năng lực chủ đầu tư, tiến độ thi công và lịch sử giá bán của các dự án đại đô thị, chung cư cao cấp, shophouse và bất động sản nghỉ dưỡng.
+        </p>
+
+        <!-- Search Form -->
+        <form method="GET" action="/du-an" class="mt-6 flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            name="q"
+            value={qFilter}
+            placeholder="Tìm theo tên dự án, đường, địa chỉ..."
+            class="px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 flex-1"
+          />
+          {provinceFilter && <input type="hidden" name="province" value={provinceFilter} />}
+          <button
+            type="submit"
+            class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm transition-colors"
+          >
+            Tìm Kiếm
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <!-- Province Filter Pills -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+      {popularProvincePills.map((p) => {
+        const isActive = provinceFilter === p.slug;
+        const href = p.slug ? `/du-an?province=${p.slug}${qFilter ? `&q=${encodeURIComponent(qFilter)}` : ''}` : `/du-an${qFilter ? `?q=${encodeURIComponent(qFilter)}` : ''}`;
+        return (
+          <a
+            href={href}
+            class={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+              isActive
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            {p.name}
+          </a>
+        );
+      })}
+    </div>
+
+    <!-- Active Filter Status -->
+    <div class="flex items-center justify-between text-xs text-slate-500">
+      <span>Hiển thị <strong>{projects.length}</strong> / <strong>{formatNumber(total)}</strong> dự án phù hợp (Trang {page}/{totalPages || 1})</span>
+      {(provinceFilter || qFilter) && (
+        <a href="/du-an" class="text-brand-600 hover:underline font-semibold">
+          Xóa bộ lọc
+        </a>
+      )}
+    </div>
+
+    <!-- Projects Grid -->
+    {projects.length === 0 ? (
+      <div class="p-12 text-center bg-white rounded-2xl border border-slate-200 text-slate-500 text-sm">
+        Không tìm thấy dự án bất động sản nào khớp với điều kiện lọc. Vui lòng thử từ khóa khác.
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {projects.map((proj) => (
+          <a
+            href={`/du-an/${proj.slug}`}
+            class="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-brand-500/50 transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div class="flex items-start justify-between gap-2 mb-3">
+                <span class="text-[11px] font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                  {proj.project_type || 'Khu đô thị'}
+                </span>
+                <span class="text-xs font-bold text-emerald-600 font-mono">
+                  {formatPricePerM2(proj.ref_price_m2)}
+                </span>
+              </div>
+
+              <h2 class="text-base font-bold text-slate-900 group-hover:text-brand-600 transition-colors leading-snug mb-1">
+                {proj.title}
+              </h2>
+              <p class="text-xs text-slate-500 mb-3 line-clamp-1">{proj.address}</p>
+
+              <div class="text-xs text-slate-600 space-y-1.5 border-t border-slate-100 pt-3">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Chủ đầu tư:</span>
+                  <span class="font-medium text-slate-800 truncate max-w-[180px]">{proj.investor_name}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Pháp lý:</span>
+                  <span class="text-emerald-700 font-medium">{proj.ownership || 'Sổ hồng lâu dài'}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Tình trạng:</span>
+                  <span class="text-slate-700">{proj.status || 'Đang giao dịch & vận hành'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-brand-600 group-hover:translate-x-0.5 transition-transform">
+              <span>Hồ sơ chi tiết dự án</span>
+              <span>&rarr;</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    )}
+
+    <!-- Pagination Controls -->
+    {totalPages > 1 && (
+      <div class="flex items-center justify-center gap-3 pt-6">
+        {page > 1 ? (
+          <a
+            href={`/du-an?page=${page - 1}${provinceFilter ? `&province=${provinceFilter}` : ''}${qFilter ? `&q=${encodeURIComponent(qFilter)}` : ''}`}
+            class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            &larr; Trang trước
+          </a>
+        ) : (
+          <span class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-300 cursor-not-allowed">
+            &larr; Trang trước
+          </span>
+        )}
+
+        <span class="text-xs font-mono text-slate-600">
+          Trang {page} / {totalPages}
+        </span>
+
+        {page < totalPages ? (
+          <a
+            href={`/du-an?page=${page + 1}${provinceFilter ? `&province=${provinceFilter}` : ''}${qFilter ? `&q=${encodeURIComponent(qFilter)}` : ''}`}
+            class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            Trang sau &rarr;
+          </a>
+        ) : (
+          <span class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-300 cursor-not-allowed">
+            Trang sau &rarr;
+          </span>
+        )}
+      </div>
+    )}
+  </div>
+</BaseLayout>

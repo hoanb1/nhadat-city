@@ -1,0 +1,16 @@
+{
+  "name": "mongo2pg",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generic MongoDB -> PostgreSQL ETL (SDD 08, phase P2). Idempotent, resumable, delta-capable.",
+  "main": "run.js",
+  "scripts": {
+    "run": "node run.js",
+    "verify": "node verify.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "mongodb": "^6.10.0",
+    "pg": "^8.13.0"
+  }
+}

@@ -1,0 +1,29 @@
+{% import "partials/icons.html" as icons %}
+<header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+  <div class="max-w-[1120px] mx-auto px-5 py-3.5 flex items-center">
+    <a href="/" class="flex items-center gap-2.5 no-underline text-indigo-950">
+      {{ icons::lucide_map("w-6 h-6 text-indigo-600") }}
+      <div>
+        <span class="text-lg font-black tracking-tight text-indigo-700">NhaDat<span class="text-indigo-400">.City</span></span>
+        <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Bản đồ quy hoạch &amp; BĐS</span>
+      </div>
+    </a>
+
+    <nav class="ml-auto hidden md:flex items-center gap-[18px]" aria-label="Menu chính">
+      <a href="/" class="text-sm font-semibold text-slate-600 no-underline hover:text-indigo-700">Bản đồ trực tuyến</a>
+      <a href="/du-an" class="text-sm font-semibold text-slate-600 no-underline hover:text-indigo-700">Dự án</a>
+      <a href="/blog" class="text-sm font-semibold text-slate-600 no-underline hover:text-indigo-700">Cẩm nang &amp; quy hoạch</a>
+    </nav>
+
+    <button id="menu-toggle" type="button" class="ml-auto md:hidden p-2 rounded-md text-slate-600 hover:bg-slate-100" aria-label="Mở menu" aria-controls="mobile-menu" aria-expanded="false">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+    </button>
+  </div>
+  <nav id="mobile-menu" class="hidden md:hidden border-t border-slate-200 bg-white px-5 py-3 flex-col gap-3" aria-label="Menu di động">
+    <div class="flex flex-col gap-3">
+      <a href="/" class="text-sm font-semibold text-slate-600 no-underline">Bản đồ trực tuyến</a>
+      <a href="/du-an" class="text-sm font-semibold text-slate-600 no-underline">Dự án</a>
+      <a href="/blog" class="text-sm font-semibold text-slate-600 no-underline">Cẩm nang &amp; quy hoạch</a>
+    </div>
+  </nav>
+</header>

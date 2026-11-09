@@ -1,0 +1,235 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../../components/Breadcrumb.astro';
+import CadastralMapIsland from '../../../components/islands/CadastralMapIsland.astro';
+import { getProvinceFull } from '../../../lib/api';
+import { formatNumber, formatPricePerM2 } from '../../../lib/formatters';
+import { generateWebApplicationSchema } from '../../../lib/seo';
+
+const { province: provinceSlug } = Astro.params;
+const full = provinceSlug ? await getProvinceFull(provinceSlug) : null;
+
+if (!full) {
+  return Astro.redirect('/quy-hoach', 301);
+}
+
+if (full.is_legacy_redirect && full.canonical_slug && full.canonical_slug !== provinceSlug) {
+  return Astro.redirect(`/quy-hoach/${full.canonical_slug}`, 301);
+}
+
+const { province, wards, planning_layers, projects } = full;
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateWebApplicationSchema(
+  `Bản Đồ Quy Hoạch Sử Dụng Đất Tỉnh ${province.name} Đến Năm 2030`,
+  `Tra cứu bản đồ quy hoạch xây dựng và sử dụng đất tỉnh ${province.name}. Phân tích chỉ tiêu đất ở đô thị, đất công nghiệp và ranh giới thửa đất tại ${wards.length} xã/phường.`,
+  `/quy-hoach/${province.slug}`,
+  'GISApplication',
+  siteUrl
+);
+---
+
+<BaseLayout
+  title={`Bản Đồ Quy Hoạch Sử Dụng Đất ${province.name} 2030 — Tra Cứu Địa Chính`}
+  description={`Tra cứu bản đồ quy hoạch xây dựng và sử dụng đất tỉnh ${province.name} mới nhất. Xem ranh giới quy hoạch 1/500, phân khu 1/2000 tại ${wards.length} xã/phường.`}
+  schema={schema}
+>
+  <div class="bg-slate-900 text-white py-10 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[
+          { name: 'Quy Hoạch', url: '/quy-hoach' },
+          { name: province.name, url: `/quy-hoach/${province.slug}` },
+        ]} />
+      </div>
+
+      <div class="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
+            <span>Kinh Tuyến {province.central_meridian}°</span>
+            <span class="w-1 h-1 rounded-full bg-brand-400"></span>
+            <span>{wards.length} Xã / Phường Số Hóa</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            Bản Đồ Quy Hoạch Địa Chính {province.name}
+          </h1>
+          <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+            Tra cứu thông tin quy hoạch sử dụng đất, chỉ giới đường đỏ và mật độ xây dựng trên địa bàn {province.name}.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a
+            href={`/gia-dat/${province.slug}`}
+            class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white border border-slate-700 transition-colors"
+          >
+            Bảng Giá Đất {province.name}
+          </a>
+          <a
+            href={`/cong-cu/chuyen-toa-do-vn2000/${province.slug}`}
+            class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-semibold text-white transition-colors shadow-sm"
+          >
+            Định Vị Tọa Độ Sổ Đỏ
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+    <!-- Map Island -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Bản Đồ Quy Hoạch Số Hóa {province.name}</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Tích hợp lớp quy hoạch giao thông, phân khu chức năng và chỉ giới đường đỏ</p>
+        </div>
+      </div>
+
+      <CadastralMapIsland
+        lat={province.lat}
+        lon={province.lon}
+        zoom={13}
+        provinceName={province.name}
+        provinceSlug={province.slug}
+        availableLayers={planning_layers}
+      />
+    </div>
+
+    <!-- Active Planning Layers List -->
+    {planning_layers && planning_layers.length > 0 && (
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-base font-bold text-slate-900">Các Lớp Dữ Liệu Bản Đồ Khả Dụng Tại {province.name}</h3>
+          <span class="text-xs text-brand-600 font-semibold bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+            Click lớp để kích hoạt trên bản đồ
+          </span>
+        </div>
+        <p class="text-xs text-slate-500 mb-4">Các lớp bản đồ vector tiles và raster tiles được tích hợp từ GeoServer & Map Engine</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {planning_layers.map((layer) => (
+            <div
+              class="layer-switch-card p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-emerald-50/30 hover:border-emerald-300 hover:shadow-md cursor-pointer transition-all flex items-center justify-between group active:scale-[0.99]"
+              data-switch-layer={layer.layer_code || layer.name}
+              data-tile-url={layer.tile_url || `/api/v1/tiles/${layer.layer_code || 'current:moon'}/{z}/{x}/{y}.png`}
+              data-layer-name={layer.name}
+              title={`Bấm để kích hoạt lớp ${layer.name} lên bản đồ`}
+            >
+              <div>
+                <span class="font-semibold text-xs text-slate-900 group-hover:text-emerald-700 block transition-colors">{layer.name}</span>
+                <span class="text-[10px] text-slate-500 font-mono block mt-0.5">{layer.layer_type} • {layer.format}</span>
+              </div>
+              <span class="text-[10px] font-bold text-brand-600 bg-white group-hover:bg-emerald-600 group-hover:text-white px-2 py-1 rounded border border-brand-200 group-hover:border-emerald-600 transition-colors shadow-sm">
+                Kích hoạt &rarr;
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- Searchable Wards Grid -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Tra Cứu Quy Hoạch Theo {wards.length} Xã / Phường Tại {province.name}</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Chọn từng xã/phường để xem bản đồ phân khu và ranh thửa đất chi tiết</p>
+        </div>
+        <div>
+          <input
+            type="text"
+            id="ward-planning-filter"
+            placeholder="Tìm nhanh xã / phường..."
+            class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 w-full sm:w-64"
+          />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5" id="planning-ward-grid">
+        {wards.map((w) => (
+          <a
+            href={`/quy-hoach/${province.slug}/${w.slug}`}
+            class="planning-ward-card p-3 rounded-xl border border-slate-200 hover:border-brand-500/50 hover:bg-slate-50 transition-all block group"
+            data-name={w.name.toLowerCase()}
+          >
+            <span class="font-semibold text-xs text-slate-900 group-hover:text-brand-600 block truncate">{w.name}</span>
+            <span class="text-[10px] text-slate-400 block mt-1 truncate">Xem ranh thửa &rarr;</span>
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- Related Real Projects -->
+    {projects && projects.length > 0 && (
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Dự Án Quy Hoạch Tiêu Biểu Tại {province.name}</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Dự án khu đô thị và hạ tầng kết nối đang triển khai</p>
+          </div>
+          <a href={`/du-an?province=${province.slug}`} class="text-xs font-semibold text-brand-600 hover:underline">
+            Xem tất cả &rarr;
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {projects.slice(0, 6).map((proj) => (
+            <a
+              href={`/du-an/${proj.slug}`}
+              class="block p-4 rounded-xl border border-slate-200 hover:border-brand-500/50 hover:shadow-sm transition-all"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="font-bold text-slate-900 text-sm hover:text-brand-600 transition-colors line-clamp-1">
+                  {proj.title}
+                </h4>
+                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded shrink-0">
+                  {formatPricePerM2(proj.ref_price_m2)}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1 line-clamp-1">{proj.address}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+
+  <script>
+    // Filter wards
+    const filterInput = document.getElementById('ward-planning-filter') as HTMLInputElement | null;
+    if (filterInput) {
+      filterInput.addEventListener('input', (e) => {
+        const q = ((e.target as HTMLInputElement).value || '').toLowerCase().trim();
+        const cards = document.querySelectorAll<HTMLElement>('.planning-ward-card');
+        cards.forEach((card) => {
+          const name = card.dataset.name || '';
+          card.style.display = !q || name.includes(q) ? '' : 'none';
+        });
+      });
+    }
+
+    // Switch map layer on layer card click
+    document.querySelectorAll('.layer-switch-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const layerCode = card.getAttribute('data-switch-layer');
+        const tileUrl = card.getAttribute('data-tile-url');
+        const layerName = card.getAttribute('data-layer-name');
+
+        window.dispatchEvent(
+          new CustomEvent('nhadat:switch-layer', {
+            detail: {
+              layer_code: layerCode,
+              tile_url: tileUrl,
+              name: layerName,
+            },
+          })
+        );
+
+        const mapContainer = document.getElementById('cadastral-map-container');
+        if (mapContainer) {
+          mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    });
+  </script>
+</BaseLayout>

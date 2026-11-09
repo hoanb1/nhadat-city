@@ -1,0 +1,104 @@
+---
+import ToolLayout from '../../../layouts/ToolLayout.astro';
+import Vn2000ConverterIsland from '../../../components/islands/Vn2000ConverterIsland.astro';
+import CadastralMapIsland from '../../../components/islands/CadastralMapIsland.astro';
+import { LEGACY_PROVINCES } from '../../../lib/constants/provinces';
+import { generateWebApplicationSchema } from '../../../lib/seo';
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateWebApplicationSchema(
+  'Công Cụ Chuyển Đổi Tọa Độ VN2000 Sang WGS84 & Google Maps',
+  'Chuyển đổi tọa độ trích lục Sổ đỏ VN2000 sang WGS84 (Google Maps, GPS) với kinh tuyến trục 63 tỉnh thành, tính diện tích thửa đất chính xác.',
+  '/cong-cu/chuyen-toa-do-vn2000',
+  'GISApplication',
+  siteUrl
+);
+---
+
+<ToolLayout
+  title="Chuyển Tọa Độ VN2000 Sang WGS84 & Google Maps (Kinh Tuyến Trục 63 Tỉnh)"
+  description="Công cụ chuyển đổi tọa độ VN2000 sang WGS84 (Google Maps, GPS) theo 7 tham số Helmert chuẩn Bộ Tài Nguyên & Môi Trường. Tính diện tích đa giác Sổ đỏ tự động."
+  toolName="Chuyển Đổi Tọa Độ VN2000"
+  schema={schema}
+>
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <!-- Left Column: Converter Island -->
+    <div class="lg:col-span-7 space-y-6">
+      <Vn2000ConverterIsland initialProvinceSlug="ha-noi" />
+
+      <!-- Map preview island -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-900 mb-3 flex items-center justify-between">
+          <span>Xem Trước Trực Quan Trên Bản Đồ Địa Chính</span>
+          <span class="text-xs text-brand-600 font-medium">Google Maps & GeoServer GIS</span>
+        </h3>
+        <CadastralMapIsland lat={21.0285} lon={105.8542} zoom={15} provinceName="Hà Nội" />
+      </div>
+    </div>
+
+    <!-- Right Column: Technical Documentation & SSR Sample -->
+    <div class="lg:col-span-5 space-y-6">
+      <!-- SSR Pre-Calculated Sample Card (Zero JS for Search Engines) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-sm font-bold text-slate-900">Mẫu Chuyển Đổi Chuẩn (Hà Nội)</h3>
+          <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            Kinh Tuyến 105.0°
+          </span>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div class="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
+            <span class="text-slate-500 font-medium block">Tọa độ gốc trên Sổ đỏ (VN2000):</span>
+            <div class="mt-1 font-mono font-bold text-slate-900">
+              X = 2321450.25 m | Y = 589230.80 m
+            </div>
+          </div>
+
+          <div class="p-3 rounded-lg bg-emerald-50/70 border border-emerald-200">
+            <span class="text-emerald-800 font-medium block">Kết quả tọa độ địa lý WGS84:</span>
+            <div class="mt-1 font-mono font-bold text-emerald-900">
+              Vĩ độ (Lat): 20.9928145 | Kinh độ (Lon): 105.8572190
+            </div>
+            <a
+              href="https://maps.google.com/?q=20.9928145,105.8572190"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="mt-2 inline-block text-brand-700 font-semibold hover:underline"
+            >
+              Mở vị trí thửa đất trên Google Maps &rarr;
+            </a>
+          </div>
+        </div>
+
+        <div class="pt-2 text-xs text-slate-500 leading-relaxed">
+          <p><strong>Lưu ý quan trọng:</strong> Trong hệ tọa độ địa chính Việt Nam, trục <strong>X</strong> biểu thị hướng Bắc (Northing) có giá trị từ 900.000 đến 2.500.000m; trục <strong>Y</strong> biểu thị hướng Đông (Easting) có giá trị từ 300.000 đến 700.000m kèm độ dịch trục 500.000m.</p>
+        </div>
+      </div>
+
+      <!-- 63 Provinces Quick Links -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-900 mb-3">
+          Kinh Tuyến Trục 63 Tỉnh / Thành Phố
+        </h3>
+        <p class="text-xs text-slate-500 mb-4 leading-relaxed">
+          Mỗi tỉnh sử dụng kinh tuyến trục riêng theo Thông tư 25/2014/TT-BTNMT để hạn chế tối đa độ biến dạng chiều dài khi đo đạc bản đồ địa chính.
+        </p>
+
+        <div class="max-h-60 overflow-y-auto divide-y divide-slate-100 text-xs">
+          {LEGACY_PROVINCES.map((p) => (
+            <div class="py-2 flex items-center justify-between">
+              <a href={`/cong-cu/chuyen-toa-do-vn2000/${p.slug}`} class="font-medium text-slate-800 hover:text-brand-600">
+                {p.name}
+              </a>
+              <div class="flex items-center gap-2 font-mono text-slate-500">
+                <span>{p.central_meridian}°</span>
+                <span class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded">EPSG {p.epsg_3deg}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolLayout>

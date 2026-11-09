@@ -1,0 +1,98 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing & coverage
+/coverage
+*.lcov
+
+# next.js / astro / rust build
+/.next/
+/out/
+/build
+/dist/
+nhadat-astro/dist/
+nhadat-astro/.astro/
+nhadat-astro/node_modules/
+nhadat-rs/target/
+target/
+
+# misc
+.DS_Store
+*.pem
+*.tar.gz
+
+# debug & logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+*.log
+seo-reports/*.log
+
+# env files
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# GeoPackage GIS & PMTiles binary dumps
+*.gpkg
+*.geojson
+*.geojsonl
+*.pmtiles
+*.pbf
+*.qgz
+*.aux.xml
+*.bak
+
+# Spatial data and scratch folders
+/ranhthua/Phuong_*/
+/ranhthua/Xa_*/
+/scratch/
+ranhthua/accounts.json
+ranhthua/token.json
+ranhthua/processed_tiles.txt
+google-service-account.json
+ranhthua/ranhthua_local_test.qgz
+ranhthua/backup_20260614_105613/
+ranhthua/scripts/accounts.json
+ranhthua/scripts/token.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.pkl
+*.xgb
+venv/
+
+# Agent scratch & logs
+.agents/
+ORIGINAL_REQUEST.md
+TEST_READY.md
+patch_plan.js
+test-mongo.js
+
+# local / private
+.env
+.env.*
+!.env.example
+google-service-account.json
+scratch/
+.claude/
+.playwright-mcp/
+*.tsbuildinfo

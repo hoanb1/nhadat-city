@@ -1,0 +1,130 @@
+---
+---
+
+<div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm" id="rental-island">
+  <div class="space-y-5">
+    <!-- Purchase Price -->
+    <div>
+      <div class="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1">
+        <span>Giá mua bất động sản (VND)</span>
+        <span id="ry-price-display" class="text-brand-600 font-bold text-sm">4,000,000,000 đ (4 tỷ)</span>
+      </div>
+      <input
+        type="range"
+        id="ry-price-slider"
+        min="500000000"
+        max="30000000000"
+        value="4000000000"
+        step="100000000"
+        class="w-full accent-brand-600 cursor-pointer"
+      />
+    </div>
+
+    <!-- Monthly Rent -->
+    <div>
+      <div class="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1">
+        <span>Tiền thuê thu về hàng tháng (VND)</span>
+        <span id="ry-rent-display" class="text-brand-600 font-bold text-sm">18,000,000 đ / tháng</span>
+      </div>
+      <input
+        type="range"
+        id="ry-rent-slider"
+        min="3000000"
+        max="100000000"
+        value="18000000"
+        step="1000000"
+        class="w-full accent-brand-600 cursor-pointer"
+      />
+    </div>
+
+    <!-- Occupancy Rate Slider -->
+    <div>
+      <div class="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1">
+        <span>Tỷ lệ lấp đầy bình quân (%/năm)</span>
+        <span id="ry-occ-display" class="text-brand-600 font-bold text-sm">95% (Trống 18 ngày/năm)</span>
+      </div>
+      <input
+        type="range"
+        id="ry-occ-slider"
+        min="70"
+        max="100"
+        value="95"
+        step="1"
+        class="w-full accent-brand-600 cursor-pointer"
+      />
+    </div>
+
+    <!-- Output Metrics -->
+    <div class="mt-6 p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-850 text-white shadow-lg space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <span class="text-xs text-slate-400">Tỷ Suất Sinh Lời Cho Thuê (Gross Yield)</span>
+          <div id="ry-gross" class="text-3xl sm:text-4xl font-extrabold text-emerald-400 tracking-tight">
+            5.13% <span class="text-sm font-medium text-slate-400">/ năm</span>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="text-xs text-slate-400">Thời gian hoàn vốn</span>
+          <div id="ry-payback" class="text-2xl font-bold text-amber-400">
+            19.5 năm
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div class="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700">
+          <span class="text-slate-400 block">Doanh thu thuê năm:</span>
+          <span id="ry-annual-revenue" class="text-white font-bold text-sm">205,200,000 đ</span>
+        </div>
+        <div class="p-2.5 rounded-lg bg-slate-800/80 border border-slate-700">
+          <span class="text-slate-400 block">Net Cap Rate (Sau trừ chi phí):</span>
+          <span id="ry-cap-rate" class="text-brand-400 font-bold text-sm">4.62% / năm</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const priceSlider = document.getElementById('ry-price-slider') as HTMLInputElement;
+  const rentSlider = document.getElementById('ry-rent-slider') as HTMLInputElement;
+  const occSlider = document.getElementById('ry-occ-slider') as HTMLInputElement;
+  const priceDisplay = document.getElementById('ry-price-display');
+  const rentDisplay = document.getElementById('ry-rent-display');
+  const occDisplay = document.getElementById('ry-occ-display');
+  const grossDisplay = document.getElementById('ry-gross');
+  const paybackDisplay = document.getElementById('ry-payback');
+  const annualRevDisplay = document.getElementById('ry-annual-revenue');
+  const capRateDisplay = document.getElementById('ry-cap-rate');
+
+  function fmtMoney(n: number): string {
+    return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + ' đ';
+  }
+
+  function recalcRY() {
+    const price = parseFloat(priceSlider.value);
+    const rent = parseFloat(rentSlider.value);
+    const occ = parseFloat(occSlider.value) / 100;
+
+    if (priceDisplay) {
+      const b = price / 1000000000;
+      priceDisplay.textContent = `${fmtMoney(price)} (${b >= 1 ? b.toFixed(1) + ' tỷ' : (price / 1000000) + ' triệu'})`;
+    }
+    if (rentDisplay) rentDisplay.textContent = `${fmtMoney(rent)} / tháng`;
+    if (occDisplay) occDisplay.textContent = `${(occ * 100).toFixed(0)}% (Trống ${Math.round((1 - occ) * 365)} ngày/năm)`;
+
+    const annualRent = rent * 12 * occ;
+    const gross = (annualRent / price) * 100;
+    const net = gross * 0.9; // 10% operating costs
+    const payback = annualRent > 0 ? price / annualRent : 0;
+
+    if (grossDisplay) grossDisplay.innerHTML = `${gross.toFixed(2)}% <span class="text-sm font-medium text-slate-400">/ năm</span>`;
+    if (paybackDisplay) paybackDisplay.textContent = `${payback.toFixed(1)} năm`;
+    if (annualRevDisplay) annualRevDisplay.textContent = fmtMoney(annualRent);
+    if (capRateDisplay) capRateDisplay.textContent = `${net.toFixed(2)}% / năm`;
+  }
+
+  priceSlider?.addEventListener('input', recalcRY);
+  rentSlider?.addEventListener('input', recalcRY);
+  occSlider?.addEventListener('input', recalcRY);
+</script>

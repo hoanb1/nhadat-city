@@ -1,0 +1,177 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../../components/Breadcrumb.astro';
+import { getProvinceFull } from '../../../lib/api';
+import { formatNumber } from '../../../lib/formatters';
+import { generateDatasetSchema } from '../../../lib/seo';
+
+const { province: provinceSlug } = Astro.params;
+const full = provinceSlug ? await getProvinceFull(provinceSlug) : null;
+
+if (!full) {
+  return Astro.redirect('/sap-nhap-hanh-chinh', 301);
+}
+
+if (full.is_legacy_redirect && full.canonical_slug && full.canonical_slug !== provinceSlug) {
+  return Astro.redirect(`/sap-nhap-hanh-chinh/${full.canonical_slug}`, 301);
+}
+
+const { province, wards } = full;
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateDatasetSchema(
+  `Đề Án Sắp Xếp Sáp Nhập Đơn Vị Hành Chính Tỉnh ${province.name} 2025`,
+  `Nghị quyết sắp xếp sáp nhập xã, phường tại tỉnh ${province.name} giai đoạn 2023 - 2025. Danh sách ${wards.length} xã/phường tên mới, diện tích, dân số và cơ sở pháp lý.`,
+  `/sap-nhap-hanh-chinh/${province.slug}`,
+  siteUrl
+);
+---
+
+<BaseLayout
+  title={`Sáp Nhập Đơn Vị Hành Chính ${province.name} 2025 (Nghị Quyết UBTVQH)`}
+  description={`Tra cứu danh sách sáp nhập ${wards.length} xã, phường tại ${province.name} mới nhất. Chi tiết số Nghị quyết UBTVQH, tên xã/phường cũ được sáp nhập, diện tích, dân số và hướng dẫn pháp lý.`}
+  schema={schema}
+>
+  <div class="bg-slate-900 text-white py-10 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[
+          { name: 'Sáp Nhập 2025', url: '/sap-nhap-hanh-chinh' },
+          { name: province.name, url: `/sap-nhap-hanh-chinh/${province.slug}` },
+        ]} />
+      </div>
+
+      <div class="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
+            <span>Nghị Quyết Có Hiệu Lực Thi Hành</span>
+            <span class="w-1 h-1 rounded-full bg-brand-400"></span>
+            <span>{wards.length} Đơn Vị Hành Chính</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            Sáp Nhập Đơn Vị Hành Chính {province.name} 2025
+          </h1>
+          <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+            {province.merged_from || 'Sắp xếp tinh gọn đơn vị hành chính theo tiêu chuẩn diện tích tự nhiên và quy mô dân số.'}
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a
+            href={`/gia-dat/${province.slug}`}
+            class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-semibold text-white transition-colors shadow-sm"
+          >
+            Bảng Giá Đất {province.name}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <!-- Province Merger Overview Box -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Tổng Đơn Vị Xã / Phường</span>
+        <div class="text-2xl font-extrabold text-slate-900 font-mono mt-1">
+          {wards.length} <span class="text-xs font-normal text-slate-500">đơn vị sau sáp nhập</span>
+        </div>
+        <p class="text-xs text-slate-500">Giảm bớt các đầu mối quản lý trung gian.</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Diện Tích Tự Nhiên</span>
+        <div class="text-2xl font-extrabold text-brand-700 font-mono mt-1">
+          {formatNumber(province.area_km2)} <span class="text-xs font-normal text-slate-500">km²</span>
+        </div>
+        <p class="text-xs text-slate-500">Đạt chuẩn diện tích theo Nghị quyết Quốc hội.</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Trụ Sở Cơ Quan Hành Chính</span>
+        <div class="text-base font-bold text-slate-900 mt-1">
+          {province.admin_center || province.name}
+        </div>
+        <p class="text-xs text-slate-500">Nơi tiếp nhận và giải quyết thủ tục một cửa.</p>
+      </div>
+    </div>
+
+    <!-- Merged Wards Table -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Chi Tiết Sắp Xếp {wards.length} Xã, Phường Thuộc {province.name}</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Đối chiếu đơn vị hành chính cũ và mới theo các đề án sáp nhập</p>
+        </div>
+        <div>
+          <input
+            type="text"
+            id="merger-search-input"
+            placeholder="Tìm theo tên xã mới hoặc đơn vị cũ..."
+            class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 w-full sm:w-72"
+          />
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs table-compact divide-y divide-slate-100">
+          <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider">
+            <tr>
+              <th class="py-3 px-3">Xã / Phường Mới</th>
+              <th class="py-3 px-3">Nghị Quyết UBTVQH</th>
+              <th class="py-3 px-3">Phương Án Sáp Nhập (Đơn vị cũ)</th>
+              <th class="py-3 px-3">Diện Tích (km²)</th>
+              <th class="py-3 px-3">Dân Số</th>
+              <th class="py-3 px-3 text-right">Chi Tiết</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100" id="merger-table-body">
+            {wards.map((w) => (
+              <tr class="hover:bg-slate-50/80 merger-row" data-search={`${w.name} ${w.merged_from || ''} ${w.resolution_no || ''}`}>
+                <td class="py-3 px-3 font-semibold text-slate-900">
+                  <a href={`/sap-nhap-hanh-chinh/${province.slug}/${w.slug}`} class="hover:text-brand-600 transition-colors block">
+                    {w.name}
+                  </a>
+                </td>
+                <td class="py-3 px-3 text-brand-700 font-mono font-medium">
+                  {w.resolution_no || 'Nghị quyết UBTVQH 2025'}
+                </td>
+                <td class="py-3 px-3 text-slate-600 max-w-xs">
+                  {w.merged_from || 'Giữ nguyên / Sắp xếp theo đề án 2025'}
+                </td>
+                <td class="py-3 px-3 font-mono text-slate-700">
+                  {w.area_km2 || 'Đang cập nhật'}
+                </td>
+                <td class="py-3 px-3 font-mono text-slate-600">
+                  {formatNumber(w.population)}
+                </td>
+                <td class="py-3 px-3 text-right">
+                  <a
+                    href={`/sap-nhap-hanh-chinh/${province.slug}/${w.slug}`}
+                    class="text-xs font-semibold text-brand-600 hover:underline"
+                  >
+                    Xem văn bản &rarr;
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const searchInput = document.getElementById('merger-search-input') as HTMLInputElement | null;
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const q = ((e.target as HTMLInputElement).value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll<HTMLTableRowElement>('tr.merger-row');
+        rows.forEach((row) => {
+          const text = (row.dataset.search || '').toLowerCase();
+          row.style.display = !q || text.includes(q) ? '' : 'none';
+        });
+      });
+    }
+  </script>
+</BaseLayout>

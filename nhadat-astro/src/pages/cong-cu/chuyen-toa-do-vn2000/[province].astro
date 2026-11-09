@@ -1,0 +1,98 @@
+---
+import ToolLayout from '../../../layouts/ToolLayout.astro';
+import Vn2000ConverterIsland from '../../../components/islands/Vn2000ConverterIsland.astro';
+import CadastralMapIsland from '../../../components/islands/CadastralMapIsland.astro';
+import { LEGACY_PROVINCE_MAP, LEGACY_PROVINCES } from '../../../lib/constants/provinces';
+import { generateWebApplicationSchema } from '../../../lib/seo';
+
+const { province: provinceSlug } = Astro.params;
+const province = provinceSlug ? LEGACY_PROVINCE_MAP[provinceSlug] : null;
+
+if (!province) {
+  return Astro.redirect('/cong-cu/chuyen-toa-do-vn2000', 301);
+}
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateWebApplicationSchema(
+  `Chuyển Tọa Độ VN2000 ${province.name} Sang WGS84 & Google Maps (Kinh Tuyến ${province.central_meridian}°)`,
+  `Chuyển đổi tọa độ trích lục Sổ đỏ VN2000 tại ${province.name} sang WGS84, kinh tuyến trục ${province.central_meridian} độ, mã EPSG ${province.epsg_3deg}.`,
+  `/cong-cu/chuyen-toa-do-vn2000/${province.slug}`,
+  'GISApplication',
+  siteUrl
+);
+---
+
+<ToolLayout
+  title={`Chuyển Tọa Độ VN2000 ${province.name} Sang WGS84 (Kinh Tuyến ${province.central_meridian}°)`}
+  description={`Công cụ chuyển đổi tọa độ VN2000 tỉnh ${province.name} sang kinh độ, vĩ độ WGS84 và Google Maps. Chuẩn kinh tuyến trục ${province.central_meridian}° (EPSG ${province.epsg_3deg}).`}
+  toolName={`Chuyển Tọa Độ VN2000 — ${province.name}`}
+  schema={schema}
+>
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div class="lg:col-span-7 space-y-6">
+      <Vn2000ConverterIsland initialProvinceSlug={province.slug} />
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-900 mb-3 flex items-center justify-between">
+          <span>Bản Đồ Địa Chính Tỉnh {province.name}</span>
+          <span class="text-xs text-brand-600 font-medium">EPSG:{province.epsg_3deg}</span>
+        </h3>
+        <CadastralMapIsland lat={province.lat} lon={province.lon} zoom={13} provinceName={province.name} />
+      </div>
+    </div>
+
+    <div class="lg:col-span-5 space-y-6">
+      <!-- Province GIS Profile -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
+          Thông Số Địa Chính Chuẩn — {province.name}
+        </h3>
+
+        <div class="divide-y divide-slate-100 text-xs">
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-500">Kinh tuyến trục (3 độ):</span>
+            <span class="font-bold text-brand-700 font-mono text-sm">{province.central_meridian}°</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-500">Mã EPSG (Múi 3°):</span>
+            <span class="font-bold text-slate-800 font-mono">EPSG:{province.epsg_3deg}</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-500">Mã EPSG (Múi 6°):</span>
+            <span class="font-bold text-slate-800 font-mono">EPSG:{province.epsg_6deg}</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-500">Vùng địa lý:</span>
+            <span class="font-semibold text-slate-800">{province.region}</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-500">Tọa độ trung tâm:</span>
+            <span class="font-mono text-slate-700">{province.lat.toFixed(4)}, {province.lon.toFixed(4)}</span>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
+          <p>Bản đồ địa chính và Giấy chứng nhận quyền sử dụng đất tại <strong>{province.name}</strong> bắt buộc sử dụng phép chiếu Transverse Mercator lưới chiếu múi 3 độ kinh tuyến trục <strong>{province.central_meridian}°</strong> theo Quyết định của Bộ Tài nguyên và Môi trường.</p>
+        </div>
+      </div>
+
+      <!-- Other Provinces in Region -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-900 mb-3">
+          Các Tỉnh Cùng Vùng {province.region}
+        </h3>
+        <div class="space-y-2 text-xs">
+          {LEGACY_PROVINCES.filter((p) => p.region === province.region && p.slug !== province.slug).map((p) => (
+            <a
+              href={`/cong-cu/chuyen-toa-do-vn2000/${p.slug}`}
+              class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all"
+            >
+              <span class="font-medium text-slate-800">{p.name}</span>
+              <span class="font-mono text-slate-500">{p.central_meridian}°</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolLayout>

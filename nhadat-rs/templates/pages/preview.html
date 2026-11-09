@@ -1,0 +1,11 @@
+{% extends "layouts/base.html" %}
+{% block content %}
+<main class="max-w-5xl mx-auto px-4 py-10">
+  <h1 class="text-2xl font-extrabold text-slate-900 mb-3">Rust shell preview</h1>
+  <p class="text-slate-600">Sample content rendered by nhadat-rs (askama). Not indexed.</p>
+  <ul class="mt-4 list-disc pl-5 text-sm text-slate-700">
+    <li>asset version: {{ page.asset_v }}</li>
+    <li>year: {{ page.year }}</li>
+  </ul>
+</main>
+{% endblock %}

@@ -1,0 +1,298 @@
+---
+interface Props {
+  variant?: 'header' | 'hero';
+  className?: string;
+  placeholder?: string;
+  id?: string;
+}
+
+const {
+  variant = 'header',
+  className = '',
+  placeholder = 'Tìm xã/phường, tên đường, dự án, xã cũ sáp nhập... (⌘K)',
+  id = variant === 'hero' ? 'hero-search' : 'header-search',
+} = Astro.props;
+---
+
+<div
+  class={`global-search-wrapper relative ${variant === 'hero' ? 'w-full max-w-2xl mx-auto' : 'w-full'} ${className}`}
+  data-search-id={id}
+>
+  <form action="/du-an" method="GET" class="relative flex items-center w-full" role="search" id={`${id}-form`}>
+    <div class="relative w-full">
+      <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+        <svg class={`${variant === 'hero' ? 'w-5 h-5 text-brand-500' : 'w-4 h-4'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+
+      <input
+        type="search"
+        name="q"
+        id={`${id}-input`}
+        class={`global-search-input w-full rounded-xl transition-all outline-none font-medium ${
+          variant === 'hero'
+            ? 'pl-11 pr-28 py-3.5 bg-white text-slate-900 placeholder-slate-400 text-sm sm:text-base border-2 border-brand-500/80 shadow-2xl shadow-brand-950/30 focus:border-brand-600 focus:ring-4 focus:ring-brand-500/20'
+            : 'pl-9 pr-14 py-2 bg-slate-100 hover:bg-slate-50 focus:bg-white text-slate-900 placeholder-slate-400 text-xs sm:text-sm border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 shadow-inner'
+        }`}
+        placeholder={placeholder}
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="Tìm kiếm bất động sản"
+      />
+
+      <div class="absolute inset-y-0 right-0 pr-2 flex items-center gap-1.5">
+        <kbd class="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 text-[10px] font-mono text-slate-500 shadow-sm pointer-events-none select-none">
+          ⌘K
+        </kbd>
+        <button
+          type="submit"
+          class={`rounded-lg font-semibold transition flex items-center justify-center ${
+            variant === 'hero'
+              ? 'px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs sm:text-sm shadow-md'
+              : 'p-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs rounded-md'
+          }`}
+          aria-label="Tìm kiếm"
+        >
+          {variant === 'hero' ? 'Tìm Kiếm' : (
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          )}
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Rich Dropdown Menu -->
+  <div
+    id={`${id}-dropdown`}
+    class="global-search-dropdown absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 z-[9999] overflow-hidden hidden"
+  >
+    <div id={`${id}-results-list`} class="max-h-[360px] overflow-y-auto divide-y divide-slate-100 p-1.5">
+      <!-- Populated via Client Script -->
+    </div>
+    <div class="bg-slate-50 px-3 py-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+      <span>Gõ <kbd class="px-1 py-0.5 bg-white border border-slate-200 rounded font-mono">↑</kbd> <kbd class="px-1 py-0.5 bg-white border border-slate-200 rounded font-mono">↓</kbd> để chọn, <kbd class="px-1 py-0.5 bg-white border border-slate-200 rounded font-mono">Enter</kbd> để mở</span>
+      <span class="text-brand-600 font-semibold">NhaDat.City Omnibar</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function initGlobalSearch() {
+    // Global Cmd+K / Ctrl+K keyboard shortcut
+    if (!window.__nhadat_search_shortcut_initialized) {
+      window.__nhadat_search_shortcut_initialized = true;
+      window.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          // Focus first available search input on page
+          const inputs = document.querySelectorAll<HTMLInputElement>('.global-search-input');
+          if (inputs.length > 0) {
+            // Prefer hero if present, otherwise header
+            const heroInput = document.querySelector<HTMLInputElement>('#hero-search-input');
+            const target = heroInput || inputs[0];
+            target.focus();
+            target.select();
+          }
+        }
+      });
+    }
+
+    // Attach search handlers to all search wrappers
+    document.querySelectorAll('.global-search-wrapper').forEach((wrapper) => {
+      const searchId = wrapper.getAttribute('data-search-id');
+      if (!searchId) return;
+
+      const input = wrapper.querySelector<HTMLInputElement>(`#${searchId}-input`);
+      const dropdown = wrapper.querySelector<HTMLElement>(`#${searchId}-dropdown`);
+      const resultsList = wrapper.querySelector<HTMLElement>(`#${searchId}-results-list`);
+
+      if (!input || !dropdown || !resultsList) return;
+
+      let debounceTimer: number | undefined;
+      let activeIndex = -1;
+
+      // Coordinate detection helper: "21.0285, 105.8542" or "21.0285 105.8542"
+      function parseCoordinates(query: string): { lat: number; lon: number } | null {
+        const trimmed = query.trim();
+        const match = trimmed.match(/^([+-]?\d+(?:\.\d+)?)[,\s;]+([+-]?\d+(?:\.\d+)?)$/);
+        if (match) {
+          const lat = parseFloat(match[1]);
+          const lon = parseFloat(match[2]);
+          if (!isNaN(lat) && !isNaN(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+            return { lat, lon };
+          }
+        }
+        return null;
+      }
+
+      async function performSearch(query: string) {
+        const trimmed = query.trim();
+        if (trimmed.length < 2) {
+          dropdown.classList.add('hidden');
+          resultsList.innerHTML = '';
+          return;
+        }
+
+        const items: Array<{
+          badge: string;
+          badgeColor: string;
+          title: string;
+          subtitle: string;
+          url: string;
+        }> = [];
+
+        // 1. Check coordinates
+        const coords = parseCoordinates(trimmed);
+        if (coords) {
+          items.push({
+            badge: 'TỌA ĐỘ GPS / WGS84',
+            badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            title: `Định vị tọa độ: ${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)}`,
+            subtitle: 'Mở trực tiếp trên Bản Đồ Quy Hoạch & Địa Chính GeoServer',
+            url: `/quy-hoach/ha-noi?lat=${coords.lat.toFixed(6)}&lon=${coords.lon.toFixed(6)}`,
+          });
+        }
+
+        // 2. Fetch API results
+        try {
+          const res = await fetch(`/api/v1/search?q=${encodeURIComponent(trimmed)}&limit=10`, {
+            signal: AbortSignal.timeout(4000),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const rawResults = Array.isArray(data) ? data : (data.results || []);
+            rawResults.forEach((r: any) => {
+              items.push({
+                badge: r.badge || r.type || 'Địa Điểm',
+                badgeColor: r.badgeColor || 'bg-brand-50 text-brand-700 border-brand-200',
+                title: r.title || r.name || '',
+                subtitle: r.subtitle || r.address || r.description || '',
+                url: r.url || r.href || '#',
+              });
+            });
+          }
+        } catch (_err) {
+          // If offline or service unavailable, coordinate match or fallback remains clean
+        }
+
+        renderDropdown(items, trimmed);
+      }
+
+      function renderDropdown(
+        items: Array<{ badge: string; badgeColor: string; title: string; subtitle: string; url: string }>,
+        query: string
+      ) {
+        activeIndex = -1;
+        if (items.length === 0) {
+          resultsList.innerHTML = `
+            <div class="px-4 py-6 text-center text-xs text-slate-500">
+              <p class="font-medium">Không tìm thấy kết quả cho "<span class="text-slate-800 font-bold">${escapeHtml(query)}</span>"</p>
+              <p class="text-[11px] text-slate-400 mt-1">Nhấn Enter để tìm kiếm dự án toàn quốc.</p>
+            </div>
+          `;
+          dropdown.classList.remove('hidden');
+          return;
+        }
+
+        resultsList.innerHTML = items
+          .map(
+            (item, idx) => `
+          <a
+            href="${escapeHtml(item.url)}"
+            class="search-result-item flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-100 transition-colors group cursor-pointer"
+            data-index="${idx}"
+          >
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${item.badgeColor}">
+                  ${escapeHtml(item.badge)}
+                </span>
+                <span class="font-semibold text-xs sm:text-sm text-slate-900 group-hover:text-brand-600 truncate">
+                  ${escapeHtml(item.title)}
+                </span>
+              </div>
+              ${
+                item.subtitle
+                  ? `<p class="text-[11px] text-slate-500 truncate mt-0.5 pl-0.5">${escapeHtml(item.subtitle)}</p>`
+                  : ''
+              }
+            </div>
+            <svg class="w-4 h-4 text-slate-400 group-hover:text-brand-600 shrink-0 transform group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        `
+          )
+          .join('');
+
+        dropdown.classList.remove('hidden');
+      }
+
+      function escapeHtml(str: string): string {
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      input.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = window.setTimeout(() => {
+          performSearch(input.value);
+        }, 180);
+      });
+
+      input.addEventListener('focus', () => {
+        if (input.value.trim().length >= 2) {
+          performSearch(input.value);
+        }
+      });
+
+      // Keyboard navigation
+      input.addEventListener('keydown', (e) => {
+        const resultItems = resultsList.querySelectorAll<HTMLAnchorElement>('.search-result-item');
+        if (resultItems.length === 0 || dropdown.classList.contains('hidden')) return;
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          activeIndex = (activeIndex + 1) % resultItems.length;
+          updateActiveItem(resultItems);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          activeIndex = (activeIndex - 1 + resultItems.length) % resultItems.length;
+          updateActiveItem(resultItems);
+        } else if (e.key === 'Enter') {
+          if (activeIndex >= 0 && activeIndex < resultItems.length) {
+            e.preventDefault();
+            resultItems[activeIndex].click();
+          }
+        } else if (e.key === 'Escape') {
+          dropdown.classList.add('hidden');
+        }
+      });
+
+      function updateActiveItem(items: NodeListOf<HTMLAnchorElement>) {
+        items.forEach((it, idx) => {
+          if (idx === activeIndex) {
+            it.classList.add('bg-slate-100', 'ring-1', 'ring-brand-500');
+            it.scrollIntoView({ block: 'nearest' });
+          } else {
+            it.classList.remove('bg-slate-100', 'ring-1', 'ring-brand-500');
+          }
+        });
+      }
+
+      // Close on outside click
+      document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target as Node)) {
+          dropdown.classList.add('hidden');
+        }
+      });
+    });
+  })();
+</script>

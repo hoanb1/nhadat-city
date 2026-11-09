@@ -1,0 +1,285 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import CadastralMapIsland from '../../components/islands/CadastralMapIsland.astro';
+import { getProjectFull } from '../../lib/api';
+import { formatPricePerM2 } from '../../lib/formatters';
+import { generateProjectSchema, generateProjectFAQSchema } from '../../lib/seo';
+import { PROVINCE_MAP, LEGACY_PROVINCE_MAP } from '../../lib/constants/provinces';
+
+const { slug } = Astro.params;
+
+if (slug) {
+  const targetProvince = LEGACY_PROVINCE_MAP[slug]?.new_province_slug || PROVINCE_MAP[slug]?.slug;
+  if (targetProvince) {
+    return Astro.redirect(`/du-an?province=${targetProvince}`, 301);
+  }
+}
+
+const full = slug ? await getProjectFull(slug) : null;
+
+if (!full) {
+  return Astro.redirect('/du-an', 301);
+}
+
+const { project, nearby_projects } = full;
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const projectSchema = generateProjectSchema(
+  project.title,
+  `Hồ sơ quy hoạch và pháp lý dự án ${project.title} do ${project.investor_name} phát triển tại ${project.address}.`,
+  project.address || 'Việt Nam',
+  project.lat,
+  project.lon,
+  `/du-an/${project.slug}`,
+  siteUrl
+);
+const faqSchema = generateProjectFAQSchema(project);
+const schema = faqSchema
+  ? {
+      '@context': 'https://schema.org',
+      '@graph': [projectSchema, faqSchema],
+    }
+  : projectSchema;
+
+const breadcrumbItems = [
+  { name: 'Trang Chủ', url: '/' },
+  { name: 'Dự Án', url: '/du-an' },
+  { name: project.title, url: `/du-an/${project.slug}` },
+];
+---
+
+<BaseLayout
+  title={`Dự Án ${project.title} — Quy Hoạch, Pháp Lý & Giá Bán Mới Nhất`}
+  description={`Tra cứu thông tin chi tiết dự án ${project.title} tại ${project.address}. Chủ đầu tư ${project.investor_name}, quy mô, tiện ích, pháp lý ${project.ownership} và giá bán ${formatPricePerM2(project.ref_price_m2)}.`}
+  schema={schema}
+  breadcrumbItems={breadcrumbItems}
+>
+  <div class="bg-slate-900 text-white py-10 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[
+          { name: 'Dự Án', url: '/du-an' },
+          { name: project.title, url: `/du-an/${project.slug}` },
+        ]} />
+      </div>
+
+      <div class="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
+            <span>{project.project_type || 'Đại Đô Thị'}</span>
+            <span class="w-1 h-1 rounded-full bg-brand-400"></span>
+            <span>{project.ownership || 'Sổ hồng lâu dài'}</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            {project.title}
+          </h1>
+          <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+            {project.address} • Phát triển bởi <strong>{project.investor_name}</strong>
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="p-3 rounded-xl bg-slate-800 border border-slate-700 text-right">
+            <span class="text-[11px] text-slate-400 block">Giá tham chiếu:</span>
+            <span class="text-xl font-extrabold text-emerald-400 font-mono">
+              {formatPricePerM2(project.ref_price_m2)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <!-- Key Specifications Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <span class="text-[11px] text-slate-400 font-medium block">Chủ Đầu Tư</span>
+        <div class="text-xs sm:text-sm font-bold text-slate-900 mt-1 truncate" title={project.investor_name}>
+          {project.investor_name}
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <span class="text-[11px] text-slate-400 font-medium block">Tổng Diện Tích</span>
+        <div class="text-xs sm:text-sm font-bold text-slate-900 mt-1">
+          {project.total_area_text || 'Đang cập nhật'}
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <span class="text-[11px] text-slate-400 font-medium block">Mật Độ Xây Dựng</span>
+        <div class="text-xs sm:text-sm font-bold text-slate-900 mt-1">
+          {project.building_density || '30% - 40%'}
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <span class="text-[11px] text-slate-400 font-medium block">Quy Mô Sản Phẩm</span>
+        <div class="text-xs sm:text-sm font-bold text-slate-900 mt-1 truncate">
+          {project.total_apartments || 'Khu phức hợp'}
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <span class="text-[11px] text-slate-400 font-medium block">Hình Thức Sở Hữu</span>
+        <div class="text-xs sm:text-sm font-bold text-emerald-700 mt-1">
+          {project.ownership || 'Sổ hồng lâu dài'}
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <span class="text-[11px] text-slate-400 font-medium block">Trạng Thái Vận Hành</span>
+        <div class="text-xs sm:text-sm font-bold text-slate-900 mt-1">
+          {project.status || 'Đang giao dịch & vận hành'}
+        </div>
+      </div>
+    </div>
+
+    <!-- Map & Details Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <!-- Left: Utilities & Legal -->
+      <div class="lg:col-span-6 space-y-6">
+        {project.location_summary && (
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+              Vị Trí & Liên Kết Vùng
+            </h2>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              {project.location_summary}
+            </p>
+          </div>
+        )}
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+            Hệ Thống Tiện Ích & Không Gian Sống
+          </h2>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            {project.utilities_summary || 'Hệ sinh thái tiện ích đồng bộ: công viên cây xanh, khu phức hợp thương mại dịch vụ, trường học, bệnh viện và khu thể thao đa năng.'}
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+            Hồ Sơ Pháp Lý Dự Án
+          </h2>
+          <div class="text-xs text-slate-600 space-y-2 leading-relaxed">
+            <p>
+              {project.legal_summary || 'Dự án đã hoàn tất phê duyệt quy hoạch chi tiết 1/500, giấy phép xây dựng và hoàn thành đầy đủ nghĩa vụ nộp tiền sử dụng đất vào ngân sách nhà nước theo Luật Đất đai 2024.'}
+            </p>
+            <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-medium">
+              Đủ điều kiện cấp Giấy chứng nhận quyền sở hữu nhà ở (Sổ hồng) theo quy định hiện hành.
+            </div>
+          </div>
+        </div>
+
+        {project.investor_description && (
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+              Về Chủ Đầu Tư ({project.investor_name})
+            </h2>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              {project.investor_description}
+            </p>
+          </div>
+        )}
+      </div>
+
+      <!-- Right: Map Location -->
+      <div class="lg:col-span-6 space-y-6">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+            Vị Trí Tọa Độ Không Gian GIS
+          </h2>
+          <CadastralMapIsland
+            lat={project.lat}
+            lon={project.lon}
+            zoom={15}
+            provinceName={project.title}
+            provinceSlug={project.province_slug}
+          />
+          <div class="text-[11px] text-slate-500 font-mono text-center">
+            Tọa độ WGS84: {project.lat.toFixed(5)}, {project.lon.toFixed(5)}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nearby Projects -->
+    {nearby_projects && nearby_projects.length > 0 && (
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Dự Án Lân Cận</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Các dự án trong cùng khu vực và địa phương</p>
+          </div>
+          <a href={`/du-an?province=${project.province_slug}`} class="text-xs font-semibold text-brand-600 hover:underline">
+            Xem thêm dự án &rarr;
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {nearby_projects.map((np) => (
+            <a
+              href={`/du-an/${np.slug}`}
+              class="block p-4 rounded-xl border border-slate-200 hover:border-brand-500/50 hover:shadow-sm transition-all"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <h3 class="font-bold text-slate-900 text-sm hover:text-brand-600 transition-colors line-clamp-1">
+                  {np.title}
+                </h3>
+                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded shrink-0">
+                  {formatPricePerM2(np.ref_price_m2)}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1 line-clamp-1">{np.address}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- Frequently Asked Questions (FAQ) Section -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+      <div class="border-b border-slate-100 pb-4">
+        <h2 class="text-lg sm:text-xl font-bold text-slate-900">
+          Câu Hỏi Thường Gặp Về Dự Án {project.title}
+        </h2>
+        <p class="text-xs text-slate-500 mt-1">
+          Giải đáp các thắc mắc phổ biến về vị trí, giá bán tham khảo và tính pháp lý của dự án
+        </p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
+          <h3 class="text-sm font-semibold text-slate-900">
+            Dự án {project.title} tọa lạc ở đâu?
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Dự án tọa lạc tại {project.address || 'khu vực trung tâm'}. Vị trí kết nối giao thông đồng bộ, thuận tiện di chuyển tới trung tâm hành chính và các hạ tầng tiện ích lân cận.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
+          <h3 class="text-sm font-semibold text-slate-900">
+            Mức giá bán tham chiếu tại {project.title} hiện nay là bao nhiêu?
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Mức giá tham chiếu tại dự án hiện vào khoảng <strong>{formatPricePerM2(project.ref_price_m2)}</strong>, tùy thuộc vào loại hình căn hộ, diện tích tim tường/thông thủy, hướng căn và tiến độ thanh toán.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
+          <h3 class="text-sm font-semibold text-slate-900">
+            Chủ đầu tư và pháp lý dự án {project.title} gồm những gì?
+          </h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Dự án do <strong>{project.investor_name}</strong> phát triển với hình thức sở hữu: <strong>{project.ownership || 'Sổ hồng lâu dài'}</strong>. {project.legal_summary || 'Hồ sơ pháp lý được công khai đầy đủ gồm phê duyệt 1/500 và giấy phép xây dựng theo luật định.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

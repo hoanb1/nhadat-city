@@ -1,0 +1,333 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { getProvinces } from '../../lib/api';
+import { formatNumber } from '../../lib/formatters';
+import { generateDatasetSchema } from '../../lib/seo';
+
+const provinces = await getProvinces();
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateDatasetSchema(
+  'Tra Cứu Sáp Nhập Đơn Vị Hành Chính Cấp Xã, Phường, Tỉnh Thành 2025',
+  'Cơ sở dữ liệu sắp xếp sáp nhập đơn vị hành chính cấp xã, huyện, tỉnh giai đoạn 2023 - 2025 theo Nghị quyết của Ủy ban Thường vụ Quốc hội.',
+  '/sap-nhap-hanh-chinh',
+  siteUrl
+);
+---
+
+<BaseLayout
+  title="Tra Cứu Sáp Nhập Đơn Vị Hành Chính 2025 (Nghị Quyết UBTVQH 34 Tỉnh Thành)"
+  description="Tra cứu chi tiết đề án sắp xếp sáp nhập xã, phường, thị trấn, tỉnh thành giai đoạn 2023 - 2025 theo các Nghị quyết mới nhất của Ủy ban Thường vụ Quốc hội. Cập nhật tên mới, trụ sở và quy mô dân số."
+  schema={schema}
+>
+  <div class="bg-slate-900 text-white py-12 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[{ name: 'Sáp Nhập Hành Chính 2025', url: '/sap-nhap-hanh-chinh' }]} />
+      </div>
+
+      <div class="mt-4 max-w-3xl">
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
+          <span>Nghị Quyết UBTVQH 2024 - 2025</span>
+          <span class="w-1 h-1 rounded-full bg-brand-400"></span>
+          <span>3.322 Xã / Phường Sắp Xếp</span>
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+          Tra Cứu Sáp Nhập Đơn Vị Hành Chính 2025
+        </h1>
+        <p class="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed">
+          Đồng bộ toàn bộ danh mục sắp xếp sáp nhập xã, phường, thị trấn theo Kết luận số 48-KL/TW của Bộ Chính trị và Nghị quyết số 35/2023/UBTVQH15 của Quốc hội.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <!-- Instant Merger Lookup Omnibar -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div class="max-w-3xl">
+        <span class="text-xs font-bold text-brand-600 uppercase tracking-wider block mb-1">
+          Tra Cứu Trực Tuyến Đơn Vị Hành Chính Cũ & Mới
+        </span>
+        <h2 class="text-xl font-bold text-slate-900 mb-2">
+          Tìm Kiếm Nhanh Xã / Phường Đã Sáp Nhập 2025
+        </h2>
+        <p class="text-xs text-slate-500 mb-4">
+          Nhập tên xã, phường hoặc thị trấn cũ trước khi sắp xếp để tra cứu tên đơn vị mới, số Nghị quyết UBTVQH và xem bảng giá đất, bản đồ quy hoạch liên thông.
+        </p>
+
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <svg class="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="search"
+            id="merger-instant-input"
+            placeholder="Nhập tên xã/phường cũ trước sáp nhập (VD: Dịch Vọng, Đông Ngạc, An Khánh)..."
+            class="w-full pl-11 pr-24 py-3.5 rounded-xl border border-slate-300 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 shadow-sm transition"
+            autocomplete="off"
+          />
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <span id="merger-search-indicator" class="hidden text-xs text-brand-600 font-semibold animate-pulse">
+              Đang tra...
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instant Results Grid Container -->
+      <div id="merger-results-container" class="mt-6 hidden space-y-3 pt-4 border-t border-slate-100">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-700 uppercase tracking-wider" id="merger-results-count">
+            Kết Quả Tra Cứu Sáp Nhập
+          </span>
+          <button type="button" id="btn-clear-merger-results" class="text-xs text-slate-400 hover:text-slate-600 font-medium">
+            Xóa kết quả ✕
+          </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="merger-cards-grid">
+          <!-- Dynamically populated via client script -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Merger Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Tỉnh Thành Sắp Xếp Mới</span>
+        <div class="text-3xl font-extrabold text-brand-700 mt-2 font-mono">
+          34 <span class="text-xs font-normal text-slate-500">tỉnh/thành</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">Sáp nhập tinh gọn bộ máy từ 63 đơn vị hành chính cũ.</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Xã / Phường Thực Hiện Sắp Xếp</span>
+        <div class="text-3xl font-extrabold text-slate-900 mt-2 font-mono">
+          3,322 <span class="text-xs font-normal text-slate-500">đơn vị</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">Hợp nhất các xã không đủ tiêu chuẩn diện tích & dân số.</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Hiệu Lực Pháp Lý</span>
+        <div class="text-xl font-bold text-emerald-700 mt-2">
+          Đã ban hành 100%
+        </div>
+        <p class="text-xs text-slate-500 mt-1">Có hiệu lực thi hành kể từ ngày 01/01/2025.</p>
+      </div>
+    </div>
+
+    <!-- 34 Provinces Merger Lookup Table -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Danh Mục Sáp Nhập Theo Từng Tỉnh Thành</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Bấm vào từng tỉnh để tra cứu tên xã/phường cũ được sáp nhập thành đơn vị mới</p>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs table-compact divide-y divide-slate-100">
+          <thead class="bg-slate-50 text-slate-600 font-semibold uppercase">
+            <tr>
+              <th class="py-3 px-3">Tỉnh / Thành Phố</th>
+              <th class="py-3 px-3">Đơn Vị Sáp Nhập Hình Thành</th>
+              <th class="py-3 px-3">Trụ Sở Hành Chính</th>
+              <th class="py-3 px-3">Số Xã / Phường</th>
+              <th class="py-3 px-3">Quy Mô Dân Số</th>
+              <th class="py-3 px-3 text-right">Chi Tiết</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {provinces.map((prov) => (
+              <tr class="hover:bg-slate-50/80">
+                <td class="py-3 px-3 font-semibold text-slate-900">
+                  <a href={`/sap-nhap-hanh-chinh/${prov.slug}`} class="hover:text-brand-600 transition-colors">
+                    {prov.name}
+                  </a>
+                </td>
+                <td class="py-3 px-3 text-slate-600">
+                  {prov.merged_from || 'Đô thị giữ nguyên ranh giới'}
+                </td>
+                <td class="py-3 px-3 text-slate-700 font-medium">
+                  {prov.admin_center || prov.name}
+                </td>
+                <td class="py-3 px-3 font-mono text-slate-600">
+                  {prov.ward_count} xã
+                </td>
+                <td class="py-3 px-3 font-mono text-slate-700">
+                  {formatNumber(prov.population)}
+                </td>
+                <td class="py-3 px-3 text-right">
+                  <a
+                    href={`/sap-nhap-hanh-chinh/${prov.slug}`}
+                    class="text-xs font-semibold text-brand-600 hover:underline"
+                  >
+                    Xem nghị quyết &rarr;
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const input = document.getElementById('merger-instant-input') as HTMLInputElement | null;
+      const indicator = document.getElementById('merger-search-indicator');
+      const container = document.getElementById('merger-results-container');
+      const cardsGrid = document.getElementById('merger-cards-grid');
+      const countEl = document.getElementById('merger-results-count');
+      const clearBtn = document.getElementById('btn-clear-merger-results');
+
+      if (!input || !container || !cardsGrid) return;
+
+      let debounceTimer: number | undefined;
+
+      clearBtn?.addEventListener('click', () => {
+        input.value = '';
+        container.classList.add('hidden');
+        cardsGrid.innerHTML = '';
+      });
+
+      input.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        const q = input.value.trim();
+        if (q.length < 2) {
+          container.classList.add('hidden');
+          cardsGrid.innerHTML = '';
+          return;
+        }
+
+        debounceTimer = window.setTimeout(async () => {
+          if (indicator) indicator.classList.remove('hidden');
+          try {
+            const res = await fetch(`/api/v1/merger/lookup?q=${encodeURIComponent(q)}`, {
+              signal: AbortSignal.timeout(5000),
+            });
+            if (indicator) indicator.classList.add('hidden');
+
+            if (!res.ok) {
+              renderEmpty(`Dịch vụ tra cứu sáp nhập tạm thời không phản hồi (Mã ${res.status}).`);
+              return;
+            }
+
+            const data = await res.json();
+            const items = Array.isArray(data) ? data : (data.results || []);
+
+            if (items.length === 0) {
+              renderEmpty(`Không tìm thấy đơn vị hành chính cũ khớp với "${q}".`);
+              return;
+            }
+
+            renderResults(items);
+          } catch (err: any) {
+            if (indicator) indicator.classList.add('hidden');
+            renderEmpty(`Không thể kết nối đến máy chủ tra cứu: ${err.message || 'Lỗi mạng'}`);
+          }
+        }, 200);
+      });
+
+      function renderEmpty(msg: string) {
+        if (countEl) countEl.textContent = 'Kết Quả Tra Cứu';
+        if (cardsGrid) {
+          cardsGrid.innerHTML = `
+            <div class="col-span-full py-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+              ${msg}
+            </div>
+          `;
+        }
+        container?.classList.remove('hidden');
+      }
+
+      function renderResults(items: any[]) {
+        if (countEl) countEl.textContent = `Tìm Thấy ${items.length} Đơn Vị Sáp Nhập Phù Hợp`;
+
+        if (cardsGrid) {
+          cardsGrid.innerHTML = items
+            .map((item) => {
+              const oldName = item.old_name || item.merged_from || item.legacy_name || 'Đơn vị cũ';
+              const newName = item.new_name || item.ward_name || item.name || 'Đơn vị mới 2025';
+              const provName = item.province_name || item.province || '';
+              const provSlug = item.province_slug || 'ha-noi';
+              const wardSlug = item.ward_slug || item.slug || '';
+              const resolution = item.resolution_no || item.resolution || 'Nghị quyết UBTVQH 2025';
+
+              return `
+                <div class="bg-slate-50 hover:bg-white p-4 rounded-xl border border-slate-200 hover:border-brand-500/60 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                      <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Sáp Nhập 2025
+                      </span>
+                      <span class="text-[11px] font-mono text-slate-500 font-semibold truncate">
+                        ${escapeHtml(provName)}
+                      </span>
+                    </div>
+
+                    <div class="space-y-1 my-2">
+                      <div class="text-xs text-slate-500 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                        <span>Xã/Phường Cũ:</span>
+                        <strong class="text-slate-700 font-bold">${escapeHtml(oldName)}</strong>
+                      </div>
+                      <div class="text-xs text-slate-900 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+                        <span>Xã/Phường Mới:</span>
+                        <strong class="text-brand-700 font-bold">${escapeHtml(newName)}</strong>
+                      </div>
+                    </div>
+
+                    <div class="text-[11px] text-slate-500 mt-2 pt-2 border-t border-slate-200/60">
+                      <span class="font-medium">Pháp lý:</span> ${escapeHtml(resolution)}
+                    </div>
+                  </div>
+
+                  <!-- 3 One-Click Links -->
+                  <div class="grid grid-cols-3 gap-1.5 mt-4 pt-3 border-t border-slate-200 text-center">
+                    <a
+                      href="/sap-nhap-hanh-chinh/${provSlug}/${wardSlug}"
+                      class="py-1.5 px-1 bg-white hover:bg-brand-50 text-brand-700 border border-slate-200 hover:border-brand-300 rounded-lg text-[11px] font-semibold transition"
+                    >
+                      🏛️ Sáp Nhập
+                    </a>
+                    <a
+                      href="/gia-dat/${provSlug}/${wardSlug}"
+                      class="py-1.5 px-1 bg-white hover:bg-amber-50 text-amber-700 border border-slate-200 hover:border-amber-300 rounded-lg text-[11px] font-semibold transition"
+                    >
+                      💰 Giá Đất
+                    </a>
+                    <a
+                      href="/quy-hoach/${provSlug}/${wardSlug}"
+                      class="py-1.5 px-1 bg-white hover:bg-emerald-50 text-emerald-700 border border-slate-200 hover:border-emerald-300 rounded-lg text-[11px] font-semibold transition"
+                    >
+                      🗺️ Quy Hoạch
+                    </a>
+                  </div>
+                </div>
+              `;
+            })
+            .join('');
+        }
+
+        container?.classList.remove('hidden');
+      }
+
+      function escapeHtml(str: string): string {
+        return (str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+    })();
+  </script>
+</BaseLayout>

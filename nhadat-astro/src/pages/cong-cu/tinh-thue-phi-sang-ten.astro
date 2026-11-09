@@ -1,0 +1,93 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import TaxCalculatorIsland from '../../components/islands/TaxCalculatorIsland.astro';
+import { calculateTaxFee } from '../../lib/calc/taxFee';
+import { formatVND } from '../../lib/formatters';
+import { generateWebApplicationSchema } from '../../lib/seo';
+
+// SSR Sample Calculation (3.5 billion VND property)
+const sampleTax = calculateTaxFee(3500000000);
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateWebApplicationSchema(
+  'Công Cụ Tính Thuế Phí Sang Tên Sổ Đỏ Nhà Đất',
+  'Tính toán chính xác thuế thu nhập cá nhân 2%, lệ phí trước bạ 0.5%, phí công chứng Thông tư 257/2016 và phí thẩm định cấp sổ đỏ khi mua bán nhà đất.',
+  '/cong-cu/tinh-thue-phi-sang-ten',
+  'GovernmentApplication',
+  siteUrl
+);
+---
+
+<ToolLayout
+  title="Tính Thuế Phí Sang Tên Sổ Đỏ Nhà Đất (Chuẩn Thông Tư 257/2016/TT-BTC)"
+  description="Công cụ tính chi tiết thuế thu nhập cá nhân 2%, lệ phí trước bạ 0.5%, phí công chứng lũy tiến và phí địa chính khi chuyển nhượng, tặng cho, thừa kế bất động sản."
+  toolName="Tính Thuế Phí Sang Tên Sổ Đỏ"
+  schema={schema}
+>
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div class="lg:col-span-7 space-y-6">
+      <TaxCalculatorIsland />
+    </div>
+
+    <!-- Right Column: Legal basis & SSR Sample Breakdown -->
+    <div class="lg:col-span-5 space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
+          <span>Bảng Kê Chi Tiết Mẫu (Nhà 3.5 Tỷ)</span>
+          <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            SSR Baseline
+          </span>
+        </h3>
+
+        <div class="divide-y divide-slate-100 text-xs">
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-600">Giá trị hợp đồng:</span>
+            <span class="font-bold text-slate-900 font-mono text-sm">{formatVND(sampleTax.property_value)}</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-600">Thuế Thu Nhập Cá Nhân (2%):</span>
+            <span class="font-bold text-rose-600 font-mono">{formatVND(sampleTax.personal_income_tax)}</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-600">Lệ phí trước bạ (0.5%):</span>
+            <span class="font-bold text-slate-800 font-mono">{formatVND(sampleTax.registration_fee)}</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-600">Phí công chứng (TT 257):</span>
+            <span class="font-mono text-slate-700">{formatVND(sampleTax.notary_fee)}</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-600">Phí thẩm định hồ sơ:</span>
+            <span class="font-mono text-slate-700">{formatVND(sampleTax.cadastral_appraisal_fee)}</span>
+          </div>
+          <div class="py-3 flex justify-between items-center bg-slate-50 px-3 rounded-lg border border-slate-200 mt-2">
+            <span class="font-bold text-slate-900">Tổng chi phí sang tên:</span>
+            <span class="font-extrabold text-brand-700 font-mono text-base">{formatVND(sampleTax.total_fee)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legal Exemptions Guide -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-slate-900">
+          Các Trường Hợp Được Miễn Thuế TNCN & Lệ Phí Trước Bạ
+        </h3>
+        <div class="text-xs text-slate-600 space-y-2 leading-relaxed">
+          <p>
+            <strong>1. Quan hệ ruột thịt (Điều 4 Luật Thuế TNCN):</strong> Chuyển nhượng, tặng cho, thừa kế bất động sản giữa:
+          </p>
+          <ul class="list-disc pl-4 space-y-0.5 text-slate-500">
+            <li>Vợ với chồng</li>
+            <li>Cha đẻ, mẹ đẻ với con đẻ / Cha nuôi, mẹ nuôi với con nuôi</li>
+            <li>Cha chồng, mẹ chồng với con dâu / Cha vợ, mẹ vợ với con rể</li>
+            <li>Ông bà nội, ông bà ngoại với cháu nội, cháu ngoại</li>
+            <li>Anh chị em ruột với nhau</li>
+          </ul>
+          <p class="pt-1">
+            <strong>2. Sở hữu duy nhất 01 nhà ở / thửa đất ở:</strong> Cá nhân chuyển nhượng chỉ có duy nhất một nhà ở, quyền sử dụng đất ở tại Việt Nam và thời gian sở hữu tối thiểu 183 ngày.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolLayout>

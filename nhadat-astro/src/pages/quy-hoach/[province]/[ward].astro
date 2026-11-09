@@ -1,0 +1,194 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../../components/Breadcrumb.astro';
+import CadastralMapIsland from '../../../components/islands/CadastralMapIsland.astro';
+import WardTriPillarNav from '../../../components/WardTriPillarNav.astro';
+import { getWardFull } from '../../../lib/api';
+import { formatNumber, formatPricePerM2 } from '../../../lib/formatters';
+import { generateWebApplicationSchema } from '../../../lib/seo';
+
+const { province: provinceSlug, ward: wardSlug } = Astro.params;
+const full = (provinceSlug && wardSlug) ? await getWardFull(provinceSlug, wardSlug) : null;
+
+if (!full) {
+  return Astro.redirect('/quy-hoach', 301);
+}
+
+const { ward, province, sibling_wards, nearby_projects } = full;
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateWebApplicationSchema(
+  `Bản Đồ Quy Hoạch Sử Dụng Đất ${ward.name}, ${province.name}`,
+  `Tra cứu bản đồ quy hoạch chi tiết 1/500 và phân khu tại ${ward.name}, tỉnh ${province.name}. Kiểm tra quy hoạch đất ở, đất giao thông và lộ giới.`,
+  `/quy-hoach/${province.slug}/${ward.slug}`,
+  'GISApplication',
+  siteUrl
+);
+---
+
+<BaseLayout
+  title={`Bản Đồ Quy Hoạch ${ward.name}, ${province.name} 2030 — Tra Cứu Thửa Đất`}
+  description={`Tra cứu bản đồ quy hoạch địa chính và sử dụng đất tại ${ward.name}, ${province.name}. Định vị số tờ, số thửa, lộ giới và chỉ giới đường đỏ trực tuyến.`}
+  schema={schema}
+>
+  <div class="bg-slate-900 text-white py-10 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[
+          { name: 'Quy Hoạch', url: '/quy-hoach' },
+          { name: province.name, url: `/quy-hoach/${province.slug}` },
+          { name: ward.name, url: `/quy-hoach/${province.slug}/${ward.slug}` },
+        ]} />
+      </div>
+
+      <div class="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
+            <span>{ward.resolution_no || 'Đề Án Sắp Xếp 2025'}</span>
+            <span class="w-1 h-1 rounded-full bg-brand-400"></span>
+            <span>Bản Đồ Phân Khu 1/2000</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            Bản Đồ Quy Hoạch Địa Chính {ward.name}
+          </h1>
+          <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+            Thuộc tỉnh {province.name}. {ward.merged_from || 'Tra cứu thông tin ranh giới thửa đất, số tờ bản đồ địa chính và phân bổ loại đất.'}
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a
+            href={`/gia-dat/${province.slug}/${ward.slug}`}
+            class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white border border-slate-700 transition-colors"
+          >
+            Giá Đất {ward.name}
+          </a>
+          <a
+            href={`/cong-cu/chuyen-toa-do-vn2000/${province.slug}`}
+            class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-semibold text-white transition-colors shadow-sm"
+          >
+            Chuyển Tọa Độ Sổ Đỏ
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <!-- 3-Pillar Navigation -->
+    <WardTriPillarNav
+      provinceSlug={province.slug}
+      provinceName={province.name}
+      wardSlug={ward.slug}
+      wardName={ward.name}
+      activeTab="quy-hoach"
+    />
+
+    <!-- Map Island -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Bản Đồ Thửa Đất Chi Tiết — {ward.name}</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Nhấp chuột trực tiếp lên thửa đất để kiểm tra quy hoạch và chỉ giới</p>
+        </div>
+      </div>
+
+      <CadastralMapIsland
+        lat={ward.lat}
+        lon={ward.lon}
+        zoom={15}
+        provinceName={ward.name}
+        provinceSlug={province.slug}
+      />
+    </div>
+
+    <!-- Ward Planning Guidance & Legal Info -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-slate-900">Hướng Dẫn Đọc Bản Đồ Quy Hoạch Tại {ward.name}</h3>
+        <div class="text-xs text-slate-600 space-y-2 leading-relaxed">
+          <p>
+            Mỗi thửa đất trên bản đồ địa chính được xác định bằng 02 thông số duy nhất: <strong>Số tờ bản đồ</strong> và <strong>Số thứ tự thửa đất</strong>.
+          </p>
+          <p>
+            Khi tra cứu quy hoạch, hãy đối chiếu màu sắc ký hiệu với bảng phân loại mã đất (ví dụ: màu hồng sẫm là <strong>ODT - Đất ở đô thị</strong>, màu cam là <strong>TMD - Đất thương mại dịch vụ</strong>, các vạch kẻ sọc thể hiện chỉ giới quy hoạch mở rộng lộ giới đường giao thông).
+          </p>
+          {ward.merged_from && (
+            <p class="pt-2 border-t border-slate-100 text-slate-700">
+              <strong>Đơn vị hành chính sáp nhập:</strong> {ward.merged_from}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-slate-900">Điều Kiện Chuyển Đổi Mục Đích Sử Dụng Đất</h3>
+        <div class="text-xs text-slate-600 space-y-2 leading-relaxed">
+          <p>
+            Để chuyển đổi từ đất nông nghiệp (CLN, LUC) sang đất ở tại {ward.name}, thửa đất bắt buộc phải thỏa mãn:
+          </p>
+          <ul class="list-disc pl-4 space-y-1 text-slate-500">
+            <li>Nằm trong khu vực được quy hoạch đất ở theo Kế hoạch sử dụng đất hàng năm đã được UBND cấp có thẩm quyền phê duyệt.</li>
+            <li>Có đường đi công cộng kết nối hợp pháp hoặc tiếp giáp đường giao thông hiện hữu.</li>
+            <li>Thực hiện đầy đủ nghĩa vụ nộp tiền sử dụng đất chênh lệch theo Bảng giá đất ban hành.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nearby Projects in Planning Area -->
+    {nearby_projects && nearby_projects.length > 0 && (
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Dự Án Quy Hoạch Gần {ward.name}</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Các dự án đô thị và khu dân cư quy hoạch trong bán kính lân cận</p>
+          </div>
+          <a href={`/du-an?province=${province.slug}`} class="text-xs font-semibold text-brand-600 hover:underline">
+            Xem thêm dự án &rarr;
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {nearby_projects.map((proj) => (
+            <a
+              href={`/du-an/${proj.slug}`}
+              class="block p-4 rounded-xl border border-slate-200 hover:border-brand-500/50 hover:shadow-sm transition-all"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="font-bold text-slate-900 text-sm hover:text-brand-600 transition-colors line-clamp-1">
+                  {proj.title}
+                </h4>
+                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded shrink-0">
+                  {formatPricePerM2(proj.ref_price_m2)}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1 line-clamp-1">{proj.address}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- Sibling Wards in Same Province -->
+    {sibling_wards && sibling_wards.length > 0 && (
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h3 class="text-base font-bold text-slate-900 mb-3">
+          Bản Đồ Quy Hoạch Các Xã / Phường Khác Tại {province.name}
+        </h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          {sibling_wards.slice(0, 18).map((sw) => (
+            <a
+              href={`/quy-hoach/${province.slug}/${sw.slug}`}
+              class="p-2.5 rounded-lg border border-slate-100 hover:border-brand-500/40 hover:bg-slate-50 text-xs transition-all block text-center truncate"
+              title={sw.name}
+            >
+              <span class="font-semibold text-slate-800 block truncate">{sw.name}</span>
+              <span class="text-[10px] text-slate-400 block mt-0.5">Xem bản đồ</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</BaseLayout>

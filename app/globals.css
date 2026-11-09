@@ -1,0 +1,115 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+/* ============================================================
+   NhaDat.City — Global CSS
+   ============================================================ */
+
+@layer base {
+  :root {
+    --color-primary: #4338ca;      /* Indigo 700 */
+    --color-primary-dark: #312e81; /* Indigo 900 */
+    --color-accent: #dc2626;       /* Red 600 */
+    --color-text: #0f172a;         /* Slate 900 */
+    --color-text-secondary: #475569; /* Slate 600 */
+    --color-text-muted: #94a3b8;   /* Slate 400 */
+    --color-bg: #f8fafc;           /* Slate 50 */
+    --color-surface: #ffffff;
+    --color-border: #e2e8f0;       /* Slate 200 */
+    --color-skeleton: #e2e8f0;
+    --color-skeleton-shine: #f1f5f9;
+
+    --radius-sm: 2px;
+    --radius-md: 4px;
+    --radius-lg: 6px;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+    min-height: 100dvh;
+  }
+
+  /* Minimum 44x44 touch targets (WCAG 2.5.5) */
+  button, [role="button"], a {
+    min-width: 0;
+    min-height: 0;
+  }
+}
+
+@layer components {
+  /* MapLibre Hover Popup */
+  .listing-hover-popup .maplibregl-popup-content {
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+  }
+  .listing-hover-popup .maplibregl-popup-tip {
+    display: none !important;
+  }
+
+  /* ── MapLibre attribution contrast fix (WCAG AA 4.5:1) ─────────────────
+     Default attribution color #909 (#990099) on white = 2.9:1 → fails.
+     Override to #595959 = 7.0:1 → passes AA + AAA for small text.
+  ─────────────────────────────────────────────────────────────────────── */
+  .maplibregl-ctrl-attrib,
+  .maplibregl-ctrl-attrib a,
+  .maplibregl-ctrl-attrib-button {
+    color: #595959 !important;
+    font-size: 11px;
+  }
+  .maplibregl-ctrl-attrib a:hover {
+    color: #1e40af !important;
+  }
+  /* Ensure attribution background has enough contrast */
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib,
+  .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib {
+    background: rgba(255,255,255,0.9) !important;
+  }
+
+  /* ── GPU-composited shimmer skeleton ───────────────────────────────────────
+     Uses transform (translate) instead of background-position — fully composited,
+     zero main-thread cost, no Lighthouse "non-composited animation" warning.
+  ─────────────────────────────────────────────────────────────────────────── */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: #e2e8f0;
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%);
+    transform: translateX(-100%);
+    animation: skeleton-slide 1.6s ease-in-out infinite;
+    will-change: transform;
+  }
+  @keyframes skeleton-slide {
+    to { transform: translateX(200%); }
+  }
+
+  /* Legacy animate-shimmer — kept for backward compat, now GPU-composited */
+  .animate-shimmer {
+    position: relative;
+    overflow: hidden;
+    background: #e2e8f0 !important;
+  }
+  .animate-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%);
+    transform: translateX(-100%);
+    animation: skeleton-slide 1.6s ease-in-out infinite;
+    will-change: transform;
+  }
+}

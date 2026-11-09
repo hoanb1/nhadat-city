@@ -1,0 +1,89 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import RentalYieldCalculatorIsland from '../../components/islands/RentalYieldCalculatorIsland.astro';
+import { calculateRentalYield } from '../../lib/calc/rentalYield';
+import { formatVND, formatPercent } from '../../lib/formatters';
+import { generateWebApplicationSchema } from '../../lib/seo';
+
+// SSR Baseline Calculation (4 billion property, 18 million/month rent)
+const sampleRY = calculateRentalYield(4000000000, 18000000, 95);
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateWebApplicationSchema(
+  'Công Cụ Tính Tỷ Suất Cho Thuê & Net Cap Rate Bất Động Sản',
+  'Tính toán tỷ suất lợi nhuận cho thuê gộp (Gross Yield), Net Cap Rate sau chi phí vận hành, dòng tiền Cash-on-Cash và thời gian hoàn vốn đầu tư nhà đất.',
+  '/cong-cu/tinh-ty-suat-cho-thue',
+  'FinancialApplication',
+  siteUrl
+);
+---
+
+<ToolLayout
+  title="Tính Tỷ Suất Cho Thuê, Net Cap Rate & Thời Gian Hoàn Vốn BĐS"
+  description="Công cụ phân tích hiệu quả tài chính bất động sản cho thuê chuyên sâu. Tính toán tỷ suất sinh lời gộp, Net Cap Rate, tỷ suất hoàn vốn dòng tiền Cash-on-Cash."
+  toolName="Tính Tỷ Suất Cho Thuê & Cap Rate"
+  schema={schema}
+>
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div class="lg:col-span-7 space-y-6">
+      <RentalYieldCalculatorIsland />
+    </div>
+
+    <!-- Right Column: Financial Benchmark & SSR Baseline -->
+    <div class="lg:col-span-5 space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
+          <span>Chỉ Số Tài Chính Mẫu (BĐS 4 Tỷ)</span>
+          <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            SSR Baseline
+          </span>
+        </h3>
+
+        <div class="divide-y divide-slate-100 text-xs">
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-600">Giá mua bất động sản:</span>
+            <span class="font-bold text-slate-900 font-mono text-sm">{formatVND(sampleRY.property_purchase_price)}</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-600">Tiền thuê hàng tháng:</span>
+            <span class="font-bold text-slate-900 font-mono">{formatVND(sampleRY.monthly_rent)}/tháng</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-600">Doanh thu thuê năm (95% lấp đầy):</span>
+            <span class="font-bold text-slate-800 font-mono">{formatVND(sampleRY.monthly_rent * 12 * 0.95)}</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-600">Tỷ suất sinh lời gộp (Gross Yield):</span>
+            <span class="font-extrabold text-emerald-600 text-sm">{formatPercent(sampleRY.gross_rental_yield_pct)}/năm</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-600">Net Cap Rate (Sau trừ chi phí):</span>
+            <span class="font-extrabold text-brand-700 text-sm">{formatPercent(sampleRY.net_cap_rate_pct)}/năm</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-600">Thời gian thu hồi vốn đầu tư:</span>
+            <span class="font-bold text-amber-600">{sampleRY.payback_period_years} năm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Benchmark Guide -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-slate-900">
+          Tiêu Chuẩn Đánh Giá Tỷ Suất Cho Thuê Tại Việt Nam
+        </h3>
+        <div class="text-xs text-slate-600 space-y-2 leading-relaxed">
+          <p>
+            Tại các đô thị lớn như Hà Nội và TP.HCM, tỷ suất cho thuê của các phân khúc thường dao động theo các biên độ sau:
+          </p>
+          <ul class="list-disc pl-4 space-y-1 text-slate-500">
+            <li><strong>Căn hộ chung cư trung - cao cấp:</strong> Gross Yield từ <strong>4.2% - 5.8%/năm</strong>. Ưu điểm thanh khoản và lấp đầy cao.</li>
+            <li><strong>Nhà phố trung tâm:</strong> Gross Yield từ <strong>2.2% - 3.5%/năm</strong>. Bù đắp bởi tiềm năng tăng giá đất dài hạn vượt trội.</li>
+            <li><strong>Tòa nhà căn hộ dịch vụ / Mini apartment:</strong> Gross Yield từ <strong>6.5% - 9.0%/năm</strong>. Đòi hỏi năng lực vận hành chuyên nghiệp.</li>
+            <li><strong>Kho bãi, đất công nghiệp:</strong> Net Cap Rate từ <strong>8.0% - 11.0%/năm</strong>. Hợp đồng thuê dài hạn 5 - 10 năm.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolLayout>

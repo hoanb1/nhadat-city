@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+<meta name="theme-color" content="#1d4ed8">
+<title>{% block title %}{{ page.meta.title }}{% endblock %}</title>
+{% block meta %}
+<meta name="description" content="{{ page.meta.description }}">
+<meta name="keywords" content="{{ page.meta.keywords }}">
+<meta name="author" content="NhaDat.City">
+<meta name="robots" content="{{ page.meta.robots }}">
+<link rel="canonical" href="{{ page.meta.canonical }}">
+<link rel="alternate" hreflang="vi-VN" href="{{ page.meta.canonical }}">
+<link rel="alternate" hreflang="x-default" href="{{ page.meta.canonical }}">
+<meta property="og:title" content="{{ page.meta.og_title }}">
+<meta property="og:description" content="{{ page.meta.og_description }}">
+<meta property="og:site_name" content="NhaDat.City">
+<meta property="og:locale" content="vi_VN">
+<meta property="og:type" content="{{ page.meta.og_type }}">
+<meta property="og:url" content="{{ page.meta.canonical }}">
+<meta property="og:image" content="{{ page.meta.og_image }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{ page.meta.og_title }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ page.meta.og_title }}">
+<meta name="twitter:description" content="{{ page.meta.og_description }}">
+<meta name="twitter:image" content="{{ page.meta.og_image }}">
+{% endblock %}
+<link rel="preconnect" href="https://cdn.nhadat.city" crossorigin="anonymous">
+<link rel="preconnect" href="https://map-api.nhadat.city" crossorigin="anonymous">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="/static/css/app.css?v={{ page.asset_v }}">
+<script type="application/ld+json">{{ page.global_jsonld|safe }}</script>
+{% block jsonld %}{% endblock %}
+{% block head_extra %}{% endblock %}
+</head>
+<body class="theme-light" data-build-time="{{ page.asset_v }}">
+{% block header %}{% include "partials/header.html" %}{% endblock %}
+{% block content %}{% endblock %}
+{% include "partials/footer.html" %}
+<script src="/static/js/app.js?v={{ page.asset_v }}" defer></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-CF58FKT7N9"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-CF58FKT7N9');</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

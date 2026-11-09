@@ -1,0 +1,331 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ToolCard from '../components/ToolCard.astro';
+import ProvinceCard from '../components/ProvinceCard.astro';
+import SvgChart from '../components/SvgChart.astro';
+import CadastralMapIsland from '../components/islands/CadastralMapIsland.astro';
+import GlobalSearchBar from '../components/search/GlobalSearchBar.astro';
+import { getOverview, getProvinces, getProjects, getArticles } from '../lib/api';
+import { LEGACY_PROVINCES } from '../lib/constants/provinces';
+import { formatNumber, formatPricePerM2 } from '../lib/formatters';
+import { generateDatasetSchema } from '../lib/seo';
+
+const overview = await getOverview();
+const provinces = await getProvinces();
+const projects = await getProjects(6);
+const articles = await getArticles(4);
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateDatasetSchema(
+  'Cơ Sở Dữ Liệu Giá Đất & Quy Hoạch Địa Chính Việt Nam 2026',
+  'Bộ dữ liệu chỉ số giá đất 34 tỉnh thành sau sáp nhập 2025, tra cứu tọa độ VN2000, bảng giá đất nhà nước và quy hoạch sử dụng đất theo Luật Đất Đai 2024.',
+  '/',
+  siteUrl
+);
+
+const proptechTools = [
+  {
+    title: 'Chuyển Tọa Độ VN2000 Sang WGS84',
+    description: 'Chuyển đổi kinh độ, vĩ độ từ bản đồ địa chính và Giấy chứng nhận Sổ đỏ sang Google Maps. Tính diện tích đa giác thửa đất chính xác.',
+    href: '/cong-cu/chuyen-toa-do-vn2000',
+    badge: 'Kinh Tuyến Trục 63 Tỉnh',
+    icon: `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`,
+  },
+  {
+    title: 'Định Giá Nhà Đất AI Lượng Hóa',
+    description: 'Ước tính giá trị thị trường bất động sản dựa trên mô hình định lượng máy học, hệ số đường sá, mặt tiền, phân vị giá và vị trí quy hoạch.',
+    href: '/cong-cu/dinh-gia-nha-dat',
+    badge: 'Quant Model AI',
+    icon: `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`,
+  },
+  {
+    title: 'Tính Lãi Suất Vay 35 Ngân Hàng',
+    description: 'So sánh chi tiết bảng tính lịch trả nợ dư nợ giảm dần và trả góp đều (Annuity) của Vietcombank, BIDV, Techcombank, Shinhan Bank...',
+    href: '/cong-cu/tinh-lai-suat-vay',
+    badge: '35 Ngân Hàng 2026',
+    icon: `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+  },
+  {
+    title: 'Tính Thuế Phí Sang Tên Sổ Đỏ',
+    description: 'Tính toán chính xác thuế TNCN 2%, lệ phí trước bạ 0.5%, phí công chứng lũy tiến Thông tư 257/2016 và phí thẩm định địa chính.',
+    href: '/cong-cu/tinh-thue-phi-sang-ten',
+    badge: 'Thông Tư 257/2016',
+    icon: `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`,
+  },
+  {
+    title: 'Xem Hướng Nhà Bát Trạch Theo Tuổi',
+    description: 'Tra cứu Cung Phi, Quái Số, phân định Đông Tứ Mệnh / Tây Tứ Mệnh, xác định 4 hướng Sinh Khí, Diên Niên, Thiên Y đón tài lộc.',
+    href: '/cong-cu/xem-huong-nha-phong-thuy',
+    badge: 'La Bàn 8 Hướng',
+    icon: `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>`,
+  },
+  {
+    title: 'Tính Tỷ Suất Cho Thuê & Net Cap Rate',
+    description: 'Tính toán tỷ suất lợi nhuận gộp (Gross Yield), lợi nhuận ròng (Net Cap Rate), dòng tiền Cash-on-Cash và thời gian hoàn vốn đầu tư BĐS.',
+    href: '/cong-cu/tinh-ty-suat-cho-thue',
+    badge: 'Chỉ Số Đầu Tư',
+    icon: `<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>`,
+  },
+];
+---
+
+<BaseLayout
+  title="NhaDat.City — Nền Tảng Tình Báo Bất Động Sản & Bản Đồ Quy Hoạch Địa Chính Việt Nam"
+  description="Tra cứu chỉ số giá đất 34 tỉnh thành sau sáp nhập 2025, chuyển đổi tọa độ VN2000 sang Google Maps, bản đồ quy hoạch sử dụng đất và bộ 6 công cụ tính toán tài chính BĐS."
+  schema={schema}
+>
+  <!-- Hero Section -->
+  <section class="relative bg-gradient-to-b from-slate-900 via-slate-850 to-slate-900 text-white py-16 lg:py-24 overflow-hidden border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div class="max-w-3xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-4">
+          <span class="w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span>
+          <span>Dữ Liệu Luật Đất Đai 2024 & Sáp Nhập 2025 Đã Đồng Bộ</span>
+        </div>
+        <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
+          Nền Tảng Tình Báo Giá Đất & Bản Đồ Quy Hoạch Địa Chính
+        </h1>
+        <p class="mt-4 text-base sm:text-lg text-slate-300 leading-relaxed">
+          Đồng bộ chỉ số giá thị trường 34 tỉnh thành mới, công cụ giải mã tọa độ VN2000 Sổ đỏ, tra cứu 52 mã loại đất và 4.550+ dự án bất động sản chuẩn xác.
+        </p>
+
+        <!-- Prominent Hero Omnibar Search -->
+        <div class="mt-8">
+          <GlobalSearchBar
+            variant="hero"
+            id="hero-search"
+            placeholder="Tìm xã/phường, tên đường, dự án, xã cũ sáp nhập, tọa độ... (⌘K)"
+          />
+        </div>
+
+        <!-- Quick Stats Matrix -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-8 border-t border-slate-800 text-left">
+          <div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-brand-400 font-mono">
+              {formatNumber(overview.total_provinces)}
+            </div>
+            <div class="text-xs text-slate-400 mt-0.5">Tỉnh Thành Mới 2025</div>
+          </div>
+          <div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-white font-mono">
+              {formatNumber(overview.total_wards)}
+            </div>
+            <div class="text-xs text-slate-400 mt-0.5">Xã / Phường Sáp Nhập</div>
+          </div>
+          <div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-white font-mono">
+              {formatNumber(overview.total_projects)}
+            </div>
+            <div class="text-xs text-slate-400 mt-0.5">Dự Án BĐS Toàn Quốc</div>
+          </div>
+          <div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono">
+              {overview.national_median_price_m2} tr
+            </div>
+            <div class="text-xs text-slate-400 mt-0.5">Trung Vị Toàn Quốc / m²</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- Live GIS & Cadastral Map Section -->
+  <section class="py-12 bg-slate-900 border-b border-slate-800 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-6">
+        <div>
+          <span class="text-xs font-bold text-brand-400 uppercase tracking-wider">Hệ Thống Thông Tin Địa Lý Quốc Gia</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">
+            Bản Đồ Quy Hoạch & Địa Chính Trực Tuyến
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl">
+            Tích hợp lớp bản đồ quy hoạch chi tiết xây dựng đô thị, ranh giới thửa đất VN-2000 và vệ tinh độ phân giải cao toàn quốc.
+          </p>
+        </div>
+        <a href="/quy-hoach" class="mt-4 md:mt-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs transition-colors">
+          Tra cứu quy hoạch 34 tỉnh &rarr;
+        </a>
+      </div>
+      <CadastralMapIsland lat={21.0285} lon={105.8542} zoom={14} provinceName="Hà Nội & Toàn Quốc" provinceSlug="ha-noi" />
+    </div>
+  </section>
+
+  <!-- 6 PropTech Tools Grid -->
+  <section class="py-16 bg-slate-50 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-10">
+        <div>
+          <span class="text-xs font-bold text-brand-600 uppercase tracking-wider">Hệ Thống Công Cụ Tính Toán</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
+            Bộ 6 Công Cụ Tình Báo PropTech
+          </h2>
+        </div>
+        <a href="/cong-cu" class="mt-4 md:mt-0 text-sm font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1">
+          Xem tất cả công cụ &rarr;
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {proptechTools.map((tool) => (
+          <ToolCard
+            title={tool.title}
+            description={tool.description}
+            href={tool.href}
+            icon={tool.icon}
+            badge={tool.badge}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- National Price Index & Vector Chart Section -->
+  <section class="py-16 bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div class="lg:col-span-5 space-y-4">
+          <span class="text-xs font-bold text-brand-600 uppercase tracking-wider">Tình Báo Thị Trường Lượng Hóa</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">
+            Chỉ Số Giá Đất 34 Tỉnh Thành Sau Sáp Nhập 2025
+          </h2>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            Dữ liệu được cập nhật liên tục từ hơn 985.000 giao dịch lịch sử và khảo sát địa chính. So sánh đối chiếu trực tiếp giữa <strong>Bảng giá đất Nhà Nước</strong> và <strong>Giá thị trường thực tế</strong> theo nguyên tắc thị trường của Luật Đất đai 2024.
+          </p>
+          <div class="pt-2">
+            <a
+              href="/gia-dat"
+              class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm transition-colors shadow-sm"
+            >
+              Tra Cứu Bảng Giá Toàn Quốc
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7">
+          <SvgChart
+            mode="trend"
+            title="Chỉ Số Giá Bất Động Sản Toàn Quốc 12 Tháng Qua"
+            subtitle="Đơn vị tính: Triệu VNĐ / m² (Trung vị giao dịch)"
+          />
+        </div>
+      </div>
+
+      <!-- Top Provinces Grid -->
+      <div class="mt-12">
+        <h3 class="text-base font-bold text-slate-900 mb-6 flex items-center justify-between">
+          <span>Các Tỉnh / Thành Phố Trọng Điểm</span>
+          <a href="/gia-dat" class="text-xs font-semibold text-brand-600 hover:underline">Xem trọn bộ 34 tỉnh</a>
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {provinces.slice(0, 8).map((p) => (
+            <ProvinceCard province={p} />
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2025 Administrative Merger Quick Lookup Bar -->
+  <section class="py-12 bg-slate-900 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <span class="text-xs font-bold text-brand-400 uppercase tracking-wider">Đề Án Sắp Xếp Hành Chính</span>
+          <h2 class="text-xl sm:text-2xl font-bold mt-1">
+            Tra Cứu Sáp Nhập Phường, Xã, Tỉnh Thành 2025
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">
+            Cập nhật chi tiết số Nghị quyết UBTVQH, tên xã/phường cũ sáp nhập vào xã/phường mới, vị trí trụ sở hành chính mới và chỉ số dân cư.
+          </p>
+        </div>
+        <a
+          href="/sap-nhap-hanh-chinh"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs sm:text-sm transition-colors whitespace-nowrap"
+        >
+          Tra Cứu Nghị Quyết Sáp Nhập &rarr;
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Real Estate Projects & Legal Guides -->
+  <section class="py-16 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <!-- Projects Column -->
+        <div>
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <span class="text-xs font-bold text-brand-600 uppercase tracking-wider">Dữ Liệu Dự Án</span>
+              <h3 class="text-xl font-bold text-slate-900">Từ Điển Dự Án Bất Động Sản</h3>
+            </div>
+            <a href="/du-an" class="text-xs font-semibold text-brand-600 hover:underline">Xem 4.550+ dự án</a>
+          </div>
+
+          <div class="space-y-3">
+            {projects.map((proj) => (
+              <a
+                href={`/du-an/${proj.slug}`}
+                class="block p-4 rounded-xl bg-white border border-slate-200 hover:border-brand-500/50 hover:shadow-sm transition-all"
+              >
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 class="font-bold text-slate-900 text-sm hover:text-brand-600 transition-colors">
+                      {proj.title}
+                    </h4>
+                    <p class="text-xs text-slate-500 mt-0.5">{proj.address}</p>
+                  </div>
+                  <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                    {formatPricePerM2(proj.ref_price_m2)}
+                  </span>
+                </div>
+                <div class="mt-2 text-[11px] text-slate-500 flex items-center gap-3">
+                  <span>Chủ đầu tư: <strong class="text-slate-700">{proj.investor_name}</strong></span>
+                  <span>•</span>
+                  <span>{proj.ownership}</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <!-- Legal Guides Column -->
+        <div>
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <span class="text-xs font-bold text-brand-600 uppercase tracking-wider">Cẩm Nang Pháp Lý</span>
+              <h3 class="text-xl font-bold text-slate-900">Quy Hoạch & Thủ Tục Đất Đai</h3>
+            </div>
+            <a href="/phap-ly" class="text-xs font-semibold text-brand-600 hover:underline">Xem toàn bộ bài viết</a>
+          </div>
+
+          <div class="space-y-3">
+            {articles.map((art) => (
+              <a
+                href={`/phap-ly/${art.slug}`}
+                class="block p-4 rounded-xl bg-white border border-slate-200 hover:border-brand-500/50 hover:shadow-sm transition-all"
+              >
+                <h4 class="font-bold text-slate-900 text-sm hover:text-brand-600 transition-colors leading-snug">
+                  {art.title}
+                </h4>
+                <p class="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
+                  {art.summary}
+                </p>
+                <div class="mt-3 flex items-center gap-2">
+                  {(art.tags || []).map((tag) => (
+                    <span class="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

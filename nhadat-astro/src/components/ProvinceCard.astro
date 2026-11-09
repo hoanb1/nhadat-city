@@ -1,0 +1,64 @@
+---
+import type { Province } from '../lib/types';
+import { formatNumber, formatPricePerM2 } from '../lib/formatters';
+
+interface Props {
+  province: Province;
+}
+
+const { province } = Astro.props;
+---
+
+<div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-brand-500/40 transition-all flex flex-col justify-between">
+  <div>
+    <div class="flex items-start justify-between gap-2 mb-3">
+      <div>
+        <h4 class="font-bold text-slate-900 text-base leading-snug">
+          <a href={`/gia-dat/${province.slug}`} class="hover:text-brand-600 transition-colors">
+            {province.name}
+          </a>
+        </h4>
+        <p class="text-[11px] text-slate-400 mt-0.5">{province.merged_from || 'Đơn vị hành chính cấp tỉnh'}</p>
+      </div>
+      <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+        {province.central_meridian}°
+      </span>
+    </div>
+
+    <!-- Price Highlight -->
+    <div class="my-3 p-3 rounded-lg bg-emerald-50/60 border border-emerald-100">
+      <div class="text-[11px] text-emerald-800 font-medium">Trung Vị Giá Đất</div>
+      <div class="text-xl font-extrabold text-emerald-700 tracking-tight">
+        {formatPricePerM2(province.median_price_m2)}
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 py-1">
+      <div>
+        <span class="text-slate-400 text-[11px]">Xã / Phường:</span>
+        <span class="font-semibold text-slate-800 ml-1">{formatNumber(province.ward_count)}</span>
+      </div>
+      <div>
+        <span class="text-slate-400 text-[11px]">Dự án BĐS:</span>
+        <span class="font-semibold text-slate-800 ml-1">{formatNumber(province.project_count)}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs font-medium">
+    <a
+      href={`/gia-dat/${province.slug}`}
+      class="text-center py-1.5 px-2 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+    >
+      Bảng Giá Đất
+    </a>
+    <a
+      href={`/quy-hoach/${province.slug}`}
+      class="text-center py-1.5 px-2 rounded-md bg-brand-50 text-brand-700 hover:bg-brand-100 transition-colors"
+    >
+      Xem Bản Đồ
+    </a>
+  </div>
+</div>

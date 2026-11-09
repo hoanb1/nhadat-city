@@ -1,0 +1,748 @@
+---
+interface Props {
+  lat?: number;
+  lon?: number;
+  zoom?: number;
+  provinceName?: string;
+  provinceSlug?: string;
+  planningLayer?: string;
+  availableLayers?: { name: string; layer_code: string; tile_url: string }[];
+}
+
+const {
+  lat = 21.0285,
+  lon = 105.8542,
+  zoom = 15,
+  provinceName = 'Hà Nội',
+  provinceSlug = 'ha-noi',
+  planningLayer = '',
+} = Astro.props;
+
+const PROVINCE_LAYER_MAP: Record<string, string> = {
+  'ha-noi': 'planning:hanoiphankhu',
+  'ho-chi-minh': 'planning:planning_zones_hcm_z14',
+  'tp-ho-chi-minh': 'planning:planning_zones_hcm_z14',
+  'da-nang': 'current:danang',
+  'can-tho': 'current:cantho',
+  'hung-yen': 'planning:hungyen-caphuyen',
+  'khanh-hoa': 'current:khanhhoa',
+  'ninh-binh': 'planning:ninhbinh',
+  'dong-nai': 'current:binhphuoc',
+  'tay-ninh': 'current:longan',
+};
+
+const activePlanningLayer =
+  planningLayer || PROVINCE_LAYER_MAP[provinceSlug] || 'current:moon';
+---
+
+<div
+  class="w-full rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 shadow-xl flex flex-col"
+  id="cadastral-map-container"
+  data-lat={lat}
+  data-lon={lon}
+  data-zoom={zoom}
+  data-province-name={provinceName}
+  data-province-slug={provinceSlug}
+  data-planning-layer={activePlanningLayer}
+>
+  <!-- DEDICATED TOP GIS COMMAND BAR (Outside map canvas — ZERO overlap on map tiles) -->
+  <div class="bg-slate-900 border-b border-slate-800 px-3 sm:px-4 py-2 flex flex-wrap xl:flex-nowrap items-center justify-between gap-2 text-xs text-white z-20">
+    <!-- Left Group: Region Badge + Quick City Switcher + Coordinate Jump -->
+    <div class="flex flex-wrap xl:flex-nowrap items-center gap-1.5 min-w-0">
+      <div class="bg-slate-800 text-white px-2.5 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5 text-xs shrink-0 whitespace-nowrap">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="font-bold text-emerald-400" id="map-active-region-label">{provinceName}</span>
+      </div>
+
+      <!-- Quick City Jump Pills -->
+      <div class="hidden xl:flex items-center gap-0.5 bg-slate-800/90 p-1 rounded-lg border border-slate-700/80 text-[11px] font-semibold shrink-0">
+        <button type="button" class="city-jump-btn px-2 py-1 rounded-md hover:bg-slate-700 text-slate-200 hover:text-emerald-400 transition whitespace-nowrap" data-lat="21.0285" data-lon="105.8542" data-zoom="14" data-layer="planning:hanoiphankhu" data-name="Hà Nội">Hà Nội</button>
+        <button type="button" class="city-jump-btn px-2 py-1 rounded-md hover:bg-slate-700 text-slate-200 hover:text-emerald-400 transition whitespace-nowrap" data-lat="10.7769" data-lon="106.7009" data-zoom="14" data-layer="planning:planning_zones_hcm_z14" data-name="TP. Hồ Chí Minh">TP.HCM</button>
+        <button type="button" class="city-jump-btn px-2 py-1 rounded-md hover:bg-slate-700 text-slate-200 hover:text-emerald-400 transition whitespace-nowrap" data-lat="16.0544" data-lon="108.2022" data-zoom="14" data-layer="current:danang" data-name="Đà Nẵng">Đà Nẵng</button>
+        <button type="button" class="city-jump-btn px-2 py-1 rounded-md hover:bg-slate-700 text-slate-200 hover:text-emerald-400 transition whitespace-nowrap" data-lat="16.4637" data-lon="107.5909" data-zoom="14" data-layer="current:moon" data-name="Thành phố Huế">Huế</button>
+        <button type="button" class="city-jump-btn hidden 2xl:inline-block px-2 py-1 rounded-md hover:bg-slate-700 text-slate-200 hover:text-emerald-400 transition whitespace-nowrap" data-lat="12.2388" data-lon="109.1967" data-zoom="14" data-layer="current:khanhhoa" data-name="Khánh Hòa">Khánh Hòa</button>
+        <button type="button" class="city-jump-btn hidden 2xl:inline-block px-2 py-1 rounded-md hover:bg-slate-700 text-slate-200 hover:text-emerald-400 transition whitespace-nowrap" data-lat="10.0452" data-lon="105.7469" data-zoom="14" data-layer="current:cantho" data-name="Cần Thơ">Cần Thơ</button>
+      </div>
+
+      <!-- Coordinate Quick Jump Form -->
+      <form id="coord-jump-form" class="hidden sm:flex items-center bg-slate-800 rounded-lg border border-slate-700 p-0.5 text-xs shrink-0">
+        <input
+          type="text"
+          id="coord-jump-input"
+          placeholder="Vĩ độ, Kinh độ"
+          class="px-2 py-1 text-[11px] outline-none bg-transparent w-28 2xl:w-40 font-mono text-white placeholder-slate-400"
+        />
+        <button
+          type="submit"
+          class="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md font-semibold text-[11px] transition whitespace-nowrap"
+        >
+          Đến
+        </button>
+      </form>
+    </div>
+
+    <!-- Right Group: Non-Overlapping Layer Toggles + Opacity + Basemap + GPS & Fullscreen -->
+    <div class="flex flex-wrap xl:flex-nowrap items-center gap-1.5 shrink-0">
+      <!-- Clean Layer Toggles (Default: ONLY Quy Hoạch ON at 60% opacity so map is never cluttered!) -->
+      <div class="flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700 shrink-0">
+        <button
+          type="button"
+          id="btn-layer-planning"
+          class="px-2 py-1 rounded-md bg-emerald-600 text-white font-semibold flex items-center gap-1.5 text-[11px] whitespace-nowrap transition"
+        >
+          <span class="w-2 h-2 rounded-full bg-white" id="dot-planning"></span>
+          <span>Lớp Quy Hoạch</span>
+        </button>
+        <button
+          type="button"
+          id="btn-layer-parcels"
+          class="px-2 py-1 rounded-md bg-transparent text-slate-300 hover:text-white font-semibold flex items-center gap-1.5 text-[11px] whitespace-nowrap transition"
+        >
+          <span class="w-2 h-2 rounded-full bg-slate-500" id="dot-parcels"></span>
+          <span>Ranh Thửa</span>
+        </button>
+        <button
+          type="button"
+          id="btn-layer-communes"
+          class="px-2 py-1 rounded-md bg-transparent text-slate-300 hover:text-white font-semibold flex items-center gap-1.5 text-[11px] whitespace-nowrap transition"
+        >
+          <span class="w-2 h-2 rounded-full bg-slate-500" id="dot-communes"></span>
+          <span>Ranh Xã 2025</span>
+        </button>
+      </div>
+
+      <!-- Compact Opacity Slider -->
+      <div class="hidden md:flex items-center gap-1.5 bg-slate-800 px-2 py-1.5 rounded-lg border border-slate-700 shrink-0">
+        <span class="text-[11px] text-slate-300 whitespace-nowrap">Độ đậm:</span>
+        <input
+          type="range"
+          id="planning-opacity-slider"
+          min="0"
+          max="100"
+          value="60"
+          class="w-16 h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-400"
+        />
+        <span id="opacity-value-label" class="font-mono font-bold text-emerald-400 text-[11px] w-7 text-right">60%</span>
+      </div>
+
+      <!-- Google Maps Basemap Switcher -->
+      <div class="flex items-center bg-slate-800 p-1 rounded-lg border border-slate-700 shrink-0">
+        <button
+          type="button"
+          id="btn-base-streets"
+          class="px-2 py-1 rounded-md bg-white text-slate-900 text-[11px] font-bold whitespace-nowrap shadow-sm transition"
+        >
+          Google Bản Đồ
+        </button>
+        <button
+          type="button"
+          id="btn-base-satellite"
+          class="px-2 py-1 rounded-md text-slate-300 hover:text-white text-[11px] font-semibold whitespace-nowrap transition"
+        >
+          Vệ Tinh
+        </button>
+      </div>
+
+      <!-- GPS & Fullscreen Action Icons -->
+      <div class="flex items-center gap-1 shrink-0">
+        <button
+          type="button"
+          id="btn-map-locate"
+          title="Vị trí của tôi (GPS)"
+          class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-emerald-600 border border-slate-700 flex items-center justify-center text-slate-200 hover:text-white transition"
+          aria-label="Vị trí của tôi"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.364-5.364l-1.414 1.414M7.05 16.95l-1.414 1.414m11.314 0l-1.414-1.414M7.05 7.05L5.636 5.636M12 8a4 4 0 100 8 4 4 0 000-8z" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          id="btn-map-fullscreen"
+          title="Toàn màn hình"
+          class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-emerald-600 border border-slate-700 flex items-center justify-center text-slate-200 hover:text-white transition"
+          aria-label="Toàn màn hình"
+        >
+          <svg id="fullscreen-expand-icon" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+          <svg id="fullscreen-compress-icon" class="w-4 h-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9L4 4m0 0h4m-4 0v4m11 5l5 5m0 0h-4m4 0v-4M9 15l-5 5m0 0h4m-4 0v-4m11-5l5-5m0 0h-4m4 0v4" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- UNOBSTRUCTED FULL-WIDTH MAP VIEWPORT (Zero permanent boxes covering the map!) -->
+  <div class="relative w-full h-[580px] lg:h-[680px] bg-slate-100">
+    <div id="cadastral-leaflet-viewport" class="w-full h-full z-0"></div>
+
+    <!-- Compact Dismissible Parcel Popup (ONLY shown when user actively clicks a parcel on the map!) -->
+    <div
+      id="parcel-popup"
+      class="absolute bottom-4 right-4 z-[400] bg-white/95 backdrop-blur-md rounded-2xl p-3.5 shadow-2xl border border-slate-200 w-[340px] sm:w-[370px] hidden pointer-events-auto"
+    >
+      <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 mb-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" id="popup-color-dot"></span>
+          <div class="truncate">
+            <div class="text-xs font-bold text-slate-900 truncate" id="popup-ward-title">Đang tra cứu thửa đất...</div>
+            <div class="text-[10px] text-slate-500 truncate" id="popup-province-subtitle">Hệ thống GIS GeoServer & PostGIS</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span
+            id="popup-land-badge"
+            class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-md border border-emerald-200"
+          >
+            ODT
+          </span>
+          <button
+            type="button"
+            id="popup-close-btn"
+            class="text-slate-400 hover:text-slate-700 p-1 text-xs font-bold"
+            aria-label="Đóng"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100 mb-2 text-center">
+        <div>
+          <div class="text-[10px] text-slate-400 uppercase">Diện tích</div>
+          <div class="text-xs font-bold text-slate-900 mt-0.5" id="popup-area">-- m²</div>
+        </div>
+        <div class="border-x border-slate-200/70">
+          <div class="text-[10px] text-slate-400 uppercase">Giá thị trường</div>
+          <div class="text-xs font-bold text-emerald-600 mt-0.5" id="popup-market-price">-- tr/m²</div>
+        </div>
+        <div>
+          <div class="text-[10px] text-slate-400 uppercase">Bảng giá NN</div>
+          <div class="text-xs font-bold text-slate-800 mt-0.5" id="popup-state-price">-- tr/m²</div>
+        </div>
+      </div>
+
+      <div class="text-[11px] text-slate-600 space-y-1">
+        <div class="flex justify-between">
+          <span class="text-slate-500">Tờ / Thửa địa chính:</span>
+          <span class="font-semibold text-slate-900" id="popup-sheet-parcel">Đang tải...</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Tọa độ WGS84:</span>
+          <span class="font-mono text-slate-800 font-semibold" id="popup-wgs84">--</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500" id="popup-vn2000-label">Tọa độ VN2000:</span>
+          <span class="font-mono text-emerald-700 font-semibold" id="popup-vn2000">--</span>
+        </div>
+        <div class="text-[10px] text-slate-500 pt-1 border-t border-slate-100 line-clamp-2" id="popup-merged-info"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEDICATED BOTTOM LIVE TELEMETRY STRIP (Outside map canvas — zero visual clutter on map!) -->
+  <div class="bg-slate-900 border-t border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-300">
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-1">
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400">📍 Khu vực:</span>
+        <span class="font-bold text-white" id="bar-ward-title">{provinceName}</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400">Tờ/Thửa:</span>
+        <span class="font-semibold text-emerald-400" id="bar-sheet-parcel">Đang đồng bộ...</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400">Giá TT:</span>
+        <span class="font-bold text-emerald-400" id="bar-market-price">-- tr/m²</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400">Giá NN:</span>
+        <span class="font-semibold text-white" id="bar-state-price">-- tr/m²</span>
+      </div>
+      <div class="hidden md:flex items-center gap-1.5">
+        <span class="text-slate-400">VN2000:</span>
+        <span class="font-mono text-slate-200" id="bar-vn2000">--</span>
+      </div>
+    </div>
+    <div class="text-[11px] text-slate-400 italic">
+      💡 Bấm trực tiếp vào thửa đất bất kỳ trên bản đồ để đo diện tích & xem quy hoạch chi tiết
+    </div>
+  </div>
+</div>
+
+<!-- Load Leaflet CSS & JS for 100% reliable Google Maps + GeoServer WMS Raster & GeoJSON rendering -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script is:inline>
+  (function () {
+    function bootGoogleCadastralMap() {
+      const container = document.getElementById('cadastral-map-container');
+      const viewport = document.getElementById('cadastral-leaflet-viewport');
+      if (!container || !viewport || container.dataset.initialized === 'true') return;
+
+      const L = window.L;
+      if (!L) {
+        setTimeout(bootGoogleCadastralMap, 80);
+        return;
+      }
+
+      container.dataset.initialized = 'true';
+
+      const initLat = parseFloat(container.dataset.lat || '21.0285');
+      const initLon = parseFloat(container.dataset.lon || '105.8542');
+      const initZoom = parseInt(container.dataset.zoom || '15', 10);
+      let currentPlanningLayer = container.dataset.planningLayer || 'planning:hanoiphankhu';
+
+      const map = L.map(viewport, {
+        center: [initLat, initLon],
+        zoom: initZoom,
+        minZoom: 5,
+        maxZoom: 21,
+        zoomControl: true,
+        attributionControl: true,
+      });
+
+      // 1. Google Maps Road Basemap (Default — Zero OpenStreetMap)
+      const googleStreets = L.tileLayer(
+        'https://{s}.google.com/vt/lyrs=m&hl=vi&x={x}&y={y}&z={z}',
+        {
+          maxZoom: 21,
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+          attribution: '© Google Maps | NhaDat.City GIS 2026',
+        }
+      ).addTo(map);
+
+      // 2. Google Satellite Hybrid Basemap (Satellite + Street Labels)
+      const googleSatellite = L.tileLayer(
+        'https://{s}.google.com/vt/lyrs=y&hl=vi&x={x}&y={y}&z={z}',
+        {
+          maxZoom: 21,
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+          attribution: '© Google Satellite | NhaDat.City GIS 2026',
+        }
+      );
+
+      // 3. GeoServer Planning Layer (Default ON at 60% opacity so Google Maps underneath is crystal clear!)
+      let planningLayerObj = L.tileLayer(
+        `/api/v1/tiles/${currentPlanningLayer}/{z}/{x}/{y}.png`,
+        {
+          minZoom: 8,
+          maxZoom: 21,
+          opacity: 0.60,
+          zIndex: 10,
+        }
+      ).addTo(map);
+
+      // 4. GeoServer 2025 Commune Boundaries Layer (Default OFF so it doesn't clutter on top of planning!)
+      const communesLayerObj = L.tileLayer(
+        '/api/v1/tiles/adminunit:communes2025fixed/{z}/{x}/{y}.png',
+        {
+          minZoom: 7,
+          maxZoom: 20,
+          opacity: 0.65,
+          zIndex: 15,
+        }
+      );
+
+      // 5. GeoServer Cadastral Parcel Layer (Default OFF so it doesn't clutter on top of planning!)
+      const parcelsLayerObj = L.tileLayer(
+        '/api/v1/tiles/current:ranhthua/{z}/{x}/{y}.png',
+        {
+          minZoom: 12,
+          maxZoom: 21,
+          opacity: 0.85,
+          zIndex: 20,
+        }
+      );
+
+      // 6. Selected Parcel GeoJSON Highlight Layer + Custom Emerald Marker
+      const highlightLayerGroup = L.layerGroup().addTo(map);
+
+      const pinIcon = L.divIcon({
+        className: 'nhadat-custom-pin',
+        html: `<div style="width:24px;height:24px;border-radius:50%;background:#059669;border:3px solid #ffffff;box-shadow:0 4px 12px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;"><div style="width:7px;height:7px;border-radius:50%;background:#ffffff;"></div></div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      });
+
+      const marker = L.marker([initLat, initLon], { icon: pinIcon }).addTo(map);
+
+      async function inspectLocation(lat, lon, showPopupModal = true) {
+        marker.setLatLng([lat, lon]);
+        const popup = document.getElementById('parcel-popup');
+        const wardTitle = document.getElementById('popup-ward-title');
+        const provSubtitle = document.getElementById('popup-province-subtitle');
+        const landBadge = document.getElementById('popup-land-badge');
+        const areaEl = document.getElementById('popup-area');
+        const marketPriceEl = document.getElementById('popup-market-price');
+        const statePriceEl = document.getElementById('popup-state-price');
+        const sheetParcelEl = document.getElementById('popup-sheet-parcel');
+        const wgs84El = document.getElementById('popup-wgs84');
+        const vn2000Label = document.getElementById('popup-vn2000-label');
+        const vn2000El = document.getElementById('popup-vn2000');
+        const mergedInfo = document.getElementById('popup-merged-info');
+
+        // Bottom Telemetry Bar Elements
+        const barWard = document.getElementById('bar-ward-title');
+        const barSheetParcel = document.getElementById('bar-sheet-parcel');
+        const barMarketPrice = document.getElementById('bar-market-price');
+        const barStatePrice = document.getElementById('bar-state-price');
+        const barVn2000 = document.getElementById('bar-vn2000');
+
+        if (showPopupModal && popup) {
+          popup.classList.remove('hidden');
+        }
+        if (wgs84El) wgs84El.textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+        if (wardTitle && showPopupModal) {
+          wardTitle.textContent = 'Đang truy vấn WFS & PostGIS...';
+        }
+
+        try {
+          const res = await fetch(`/api/v1/geo/parcel?lat=${lat.toFixed(6)}&lon=${lon.toFixed(6)}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (!data || !data.parcel) return;
+
+          const feat = data.parcel;
+          const props = feat.properties || {};
+
+          // Update highlighted polygon on map only when user actively inspects/clicks
+          highlightLayerGroup.clearLayers();
+          if (feat.geometry && showPopupModal) {
+            L.geoJSON(feat, {
+              style: {
+                color: '#047857',
+                weight: 3,
+                fillColor: '#10b981',
+                fillOpacity: 0.3,
+              },
+            }).addTo(highlightLayerGroup);
+          }
+
+          if (showPopupModal && popup) {
+            popup.classList.remove('hidden');
+          }
+
+          const resolvedWard = props.ward_name || props.dia_chi || 'Khu vực quy hoạch đô thị';
+          const resolvedMarket = props.median_price_m2 ? `${Number(props.median_price_m2).toFixed(1)} tr/m²` : 'Đang cập nhật';
+          const resolvedState = props.state_price_m2 ? `${Number(props.state_price_m2).toFixed(1)} tr/m²` : '--';
+
+          let resolvedSheet = 'Vùng quy hoạch phân khu';
+          const soTo = props.so_to && String(props.so_to).trim() !== '' ? props.so_to : null;
+          const soThua = props.so_thua && String(props.so_thua).trim() !== '' ? props.so_thua : null;
+          const featId = feat.id ? String(feat.id).replace('ranhthua.', '#') : '';
+          if (soTo || soThua) {
+            resolvedSheet = `Tờ ${soTo || '--'} • Thửa ${soThua || '--'}`;
+          } else if (featId) {
+            resolvedSheet = `Mã thửa GIS ${featId}`;
+          }
+
+          if (wardTitle) wardTitle.textContent = resolvedWard;
+          if (barWard) barWard.textContent = resolvedWard;
+
+          if (provSubtitle) {
+            provSubtitle.textContent = `${props.province_name || container.dataset.provinceName || 'Việt Nam'} • ${props.loai_dat_name || 'Đất quy hoạch đô thị'}`;
+          }
+          if (landBadge) {
+            landBadge.textContent = props.loai_dat && props.loai_dat.trim() !== '' ? props.loai_dat : 'ODT / QH';
+          }
+          if (areaEl) {
+            areaEl.textContent = props.dien_tich ? `${Number(props.dien_tich).toFixed(1)} m²` : 'Theo lô QH';
+          }
+          if (marketPriceEl) marketPriceEl.textContent = resolvedMarket;
+          if (barMarketPrice) barMarketPrice.textContent = resolvedMarket;
+
+          if (statePriceEl) statePriceEl.textContent = resolvedState;
+          if (barStatePrice) barStatePrice.textContent = resolvedState;
+
+          if (sheetParcelEl) sheetParcelEl.textContent = resolvedSheet;
+          if (barSheetParcel) barSheetParcel.textContent = resolvedSheet;
+
+          if (vn2000Label && props.central_meridian) {
+            vn2000Label.textContent = `VN2000 (KTT ${props.central_meridian}°):`;
+          }
+          if (props.vn2000_x && props.vn2000_y) {
+            const vnStr = `X: ${props.vn2000_x} | Y: ${props.vn2000_y}`;
+            if (vn2000El) vn2000El.textContent = vnStr;
+            if (barVn2000) barVn2000.textContent = vnStr;
+          }
+          if (mergedInfo) {
+            mergedInfo.textContent = props.merged_from
+              ? `Sáp nhập 2025: ${props.merged_from}`
+              : '';
+          }
+        } catch (e) {
+          console.error('[CadastralMap] Parcel lookup error:', e);
+        }
+      }
+
+      // On initial load: populate the bottom status bar WITHOUT opening the floating popup modal over the map!
+      inspectLocation(initLat, initLon, false);
+
+      map.on('click', (e) => {
+        inspectLocation(e.latlng.lat, e.latlng.lng, true);
+      });
+
+      // Layer Controls (Default: planning=true, parcels=false, communes=false)
+      let planningVisible = true;
+      let parcelsVisible = false;
+      let communesVisible = false;
+
+      const btnPlanning = document.getElementById('btn-layer-planning');
+      const dotPlanning = document.getElementById('dot-planning');
+      const btnParcels = document.getElementById('btn-layer-parcels');
+      const dotParcels = document.getElementById('dot-parcels');
+      const btnCommunes = document.getElementById('btn-layer-communes');
+      const dotCommunes = document.getElementById('dot-communes');
+
+      function updateBtnStyle(btn, dot, active) {
+        if (!btn || !dot) return;
+        if (active) {
+          btn.className = 'px-2.5 py-1 rounded-md bg-emerald-600 text-white font-semibold flex items-center gap-1.5 text-[11px] whitespace-nowrap transition';
+          dot.className = 'w-2 h-2 rounded-full bg-white';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-md bg-transparent text-slate-300 hover:text-white font-semibold flex items-center gap-1.5 text-[11px] whitespace-nowrap transition';
+          dot.className = 'w-2 h-2 rounded-full bg-slate-500';
+        }
+      }
+
+      btnPlanning?.addEventListener('click', () => {
+        planningVisible = !planningVisible;
+        if (planningVisible) {
+          planningLayerObj.addTo(map);
+        } else {
+          map.removeLayer(planningLayerObj);
+        }
+        updateBtnStyle(btnPlanning, dotPlanning, planningVisible);
+      });
+
+      btnParcels?.addEventListener('click', () => {
+        parcelsVisible = !parcelsVisible;
+        if (parcelsVisible) {
+          parcelsLayerObj.addTo(map);
+        } else {
+          map.removeLayer(parcelsLayerObj);
+        }
+        updateBtnStyle(btnParcels, dotParcels, parcelsVisible);
+      });
+
+      btnCommunes?.addEventListener('click', () => {
+        communesVisible = !communesVisible;
+        if (communesVisible) {
+          communesLayerObj.addTo(map);
+        } else {
+          map.removeLayer(communesLayerObj);
+        }
+        updateBtnStyle(btnCommunes, dotCommunes, communesVisible);
+      });
+
+      // Opacity Slider
+      const opacitySlider = document.getElementById('planning-opacity-slider');
+      const opacityLabel = document.getElementById('opacity-value-label');
+      opacitySlider?.addEventListener('input', (ev) => {
+        const val = parseInt(ev.target.value || '55', 10);
+        if (opacityLabel) opacityLabel.textContent = `${val}%`;
+        planningLayerObj.setOpacity(val / 100);
+      });
+
+      // Google Maps Basemap Switcher (Google Road vs Google Satellite Hybrid)
+      const btnStreets = document.getElementById('btn-base-streets');
+      const btnSatellite = document.getElementById('btn-base-satellite');
+      btnStreets?.addEventListener('click', () => {
+        if (map.hasLayer(googleSatellite)) map.removeLayer(googleSatellite);
+        if (!map.hasLayer(googleStreets)) googleStreets.addTo(map);
+        btnStreets.className = 'px-2.5 py-1 rounded-md bg-white text-slate-900 text-[11px] font-bold whitespace-nowrap shadow-sm transition';
+        if (btnSatellite) {
+          btnSatellite.className = 'px-2.5 py-1 rounded-md text-slate-300 hover:text-white text-[11px] font-semibold whitespace-nowrap transition';
+        }
+      });
+
+      btnSatellite?.addEventListener('click', () => {
+        if (map.hasLayer(googleStreets)) map.removeLayer(googleStreets);
+        if (!map.hasLayer(googleSatellite)) googleSatellite.addTo(map);
+        btnSatellite.className = 'px-2.5 py-1 rounded-md bg-white text-slate-900 text-[11px] font-bold whitespace-nowrap shadow-sm transition';
+        if (btnStreets) {
+          btnStreets.className = 'px-2.5 py-1 rounded-md text-slate-300 hover:text-white text-[11px] font-semibold whitespace-nowrap transition';
+        }
+      });
+
+      // City Quick Jump Buttons
+      document.querySelectorAll('.city-jump-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const jLat = parseFloat(btn.getAttribute('data-lat') || '21.0285');
+          const jLon = parseFloat(btn.getAttribute('data-lon') || '105.8542');
+          const jZoom = parseInt(btn.getAttribute('data-zoom') || '15', 10);
+          const jLayer = btn.getAttribute('data-layer') || 'current:qhct2026_ha_noi';
+          const jName = btn.getAttribute('data-name') || 'Việt Nam';
+
+          const regionLabel = document.getElementById('map-active-region-label');
+          if (regionLabel) regionLabel.textContent = jName;
+
+          if (jLayer !== currentPlanningLayer) {
+            currentPlanningLayer = jLayer;
+            planningLayerObj.setUrl(`/api/v1/tiles/${currentPlanningLayer}/{z}/{x}/{y}.png`);
+          }
+
+          map.flyTo([jLat, jLon], jZoom, { duration: 1.0 });
+          inspectLocation(jLat, jLon, false);
+        });
+      });
+
+      // Fullscreen Toggle
+      const btnFullscreen = document.getElementById('btn-map-fullscreen');
+      const iconExpand = document.getElementById('fullscreen-expand-icon');
+      const iconCompress = document.getElementById('fullscreen-compress-icon');
+
+      btnFullscreen?.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          if (container.requestFullscreen) {
+            container.requestFullscreen();
+          } else if (container.webkitRequestFullscreen) {
+            container.webkitRequestFullscreen();
+          }
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          }
+        }
+      });
+
+      document.addEventListener('fullscreenchange', () => {
+        const isFull = !!document.fullscreenElement;
+        if (iconExpand && iconCompress) {
+          if (isFull) {
+            iconExpand.classList.add('hidden');
+            iconCompress.classList.remove('hidden');
+          } else {
+            iconExpand.classList.remove('hidden');
+            iconCompress.classList.add('hidden');
+          }
+        }
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 200);
+      });
+
+      // GPS "Vị trí của tôi" (Locate Me)
+      const btnLocate = document.getElementById('btn-map-locate');
+      btnLocate?.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          alert('Thiết bị hoặc trình duyệt không hỗ trợ Geolocation.');
+          return;
+        }
+        btnLocate.classList.add('animate-spin');
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            btnLocate.classList.remove('animate-spin');
+            const gLat = pos.coords.latitude;
+            const gLon = pos.coords.longitude;
+            map.flyTo([gLat, gLon], 17, { duration: 1.2 });
+            inspectLocation(gLat, gLon, true);
+          },
+          (err) => {
+            btnLocate.classList.remove('animate-spin');
+            alert('Không thể xác định vị trí GPS: ' + err.message);
+          },
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      });
+
+      // Coordinate Quick Jump Form
+      const coordForm = document.getElementById('coord-jump-form');
+      const coordInput = document.getElementById('coord-jump-input');
+      coordForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const raw = (coordInput?.value || '').trim();
+        const match = raw.match(/^([+-]?\d+(?:\.\d+)?)[,\s;]+([+-]?\d+(?:\.\d+)?)$/);
+        if (match) {
+          const cLat = parseFloat(match[1]);
+          const cLon = parseFloat(match[2]);
+          if (!isNaN(cLat) && !isNaN(cLon) && Math.abs(cLat) <= 90 && Math.abs(cLon) <= 180) {
+            map.flyTo([cLat, cLon], 17, { duration: 1.0 });
+            inspectLocation(cLat, cLon, true);
+            return;
+          }
+        }
+        alert('Vui lòng nhập định dạng: Vĩ độ, Kinh độ (Ví dụ: 21.0285, 105.8542)');
+      });
+
+      // External Custom Event: nhadat:switch-layer
+      window.addEventListener('nhadat:switch-layer', (e) => {
+        const detail = e.detail || {};
+        const layerCode = detail.layer_code || detail.layerCode;
+        const tileUrl = detail.tile_url || detail.tileUrl;
+        const layerName = detail.name || detail.layerName;
+
+        if (layerCode || tileUrl) {
+          currentPlanningLayer = layerCode || currentPlanningLayer;
+          const url = tileUrl || `/api/v1/tiles/${currentPlanningLayer}/{z}/{x}/{y}.png`;
+          planningLayerObj.setUrl(url);
+
+          const regionLabel = document.getElementById('map-active-region-label');
+          if (regionLabel && layerName) {
+            regionLabel.textContent = layerName;
+          }
+
+          if (!map.hasLayer(planningLayerObj)) {
+            planningLayerObj.addTo(map);
+            planningVisible = true;
+            updateBtnStyle(btnPlanning, dotPlanning, true);
+          }
+        }
+      });
+
+      // External Custom Event: nhadat:focus-location
+      window.addEventListener('nhadat:focus-location', (e) => {
+        const detail = e.detail || {};
+        const fLat = parseFloat(detail.lat);
+        const fLon = parseFloat(detail.lon);
+        const fZoom = parseInt(detail.zoom || '18', 10);
+        const polygon = detail.polygon;
+
+        if (!isNaN(fLat) && !isNaN(fLon)) {
+          map.flyTo([fLat, fLon], fZoom, { duration: 1.2 });
+
+          if (polygon) {
+            highlightLayerGroup.clearLayers();
+            if (Array.isArray(polygon)) {
+              L.polygon(polygon, {
+                color: '#059669',
+                weight: 3.5,
+                fillColor: '#10b981',
+                fillOpacity: 0.35,
+                dashArray: '5, 5',
+              }).addTo(highlightLayerGroup);
+            } else if (typeof polygon === 'object') {
+              L.geoJSON(polygon, {
+                style: {
+                  color: '#059669',
+                  weight: 3.5,
+                  fillColor: '#10b981',
+                  fillOpacity: 0.35,
+                },
+              }).addTo(highlightLayerGroup);
+            }
+          }
+
+          inspectLocation(fLat, fLon, true);
+        }
+      });
+
+      // Close Popup Button
+      document.getElementById('popup-close-btn')?.addEventListener('click', () => {
+        document.getElementById('parcel-popup')?.classList.add('hidden');
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootGoogleCadastralMap);
+    } else {
+      bootGoogleCadastralMap();
+    }
+  })();
+</script>

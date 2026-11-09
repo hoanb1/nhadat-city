@@ -1,0 +1,188 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../../components/Breadcrumb.astro';
+import CadastralMapIsland from '../../../components/islands/CadastralMapIsland.astro';
+import WardTriPillarNav from '../../../components/WardTriPillarNav.astro';
+import { getWardFull } from '../../../lib/api';
+import { formatNumber } from '../../../lib/formatters';
+import { generateDatasetSchema } from '../../../lib/seo';
+
+const { province: provinceSlug, ward: wardSlug } = Astro.params;
+const full = (provinceSlug && wardSlug) ? await getWardFull(provinceSlug, wardSlug) : null;
+
+if (!full) {
+  return Astro.redirect('/sap-nhap-hanh-chinh', 301);
+}
+
+const { ward, province, sibling_wards } = full;
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateDatasetSchema(
+  `Nghị Quyết Sáp Nhập ${ward.name}, ${province.name} 2025`,
+  `Chi tiết phương án sắp xếp sáp nhập ${ward.name}, tỉnh ${province.name}. Thông tin số Nghị quyết UBTVQH, đơn vị cũ sáp nhập, trụ sở và quy trình đổi sổ đỏ.`,
+  `/sap-nhap-hanh-chinh/${province.slug}/${ward.slug}`,
+  siteUrl
+);
+---
+
+<BaseLayout
+  title={`Sáp Nhập ${ward.name}, ${province.name} 2025 — Nghị Quyết UBTVQH & Đổi Sổ Đỏ`}
+  description={`Thông tin chính thức sáp nhập ${ward.name}, ${province.name}. Chi tiết số Nghị quyết, nguồn gốc đơn vị hành chính cũ, diện tích ${ward.area_km2} km², dân số ${formatNumber(ward.population)} người và hướng dẫn thủ tục đất đai.`}
+  schema={schema}
+>
+  <div class="bg-slate-900 text-white py-10 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[
+          { name: 'Sáp Nhập 2025', url: '/sap-nhap-hanh-chinh' },
+          { name: province.name, url: `/sap-nhap-hanh-chinh/${province.slug}` },
+          { name: ward.name, url: `/sap-nhap-hanh-chinh/${province.slug}/${ward.slug}` },
+        ]} />
+      </div>
+
+      <div class="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
+            <span>{ward.resolution_no || 'Nghị quyết số 1202/NQ-UBTVQH15'}</span>
+            <span class="w-1 h-1 rounded-full bg-brand-400"></span>
+            <span>Hiệu Lực Từ 01/01/2025</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            Sáp Nhập Hành Chính: {ward.name}
+          </h1>
+          <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+            Đơn vị hành chính trực thuộc tỉnh <strong>{province.name}</strong> sau khi thực hiện đề án sắp xếp tinh gọn.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a
+            href={`/gia-dat/${province.slug}/${ward.slug}`}
+            class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-semibold text-white transition-colors shadow-sm"
+          >
+            Bảng Giá Đất {ward.name}
+          </a>
+          <a
+            href={`/quy-hoach/${province.slug}/${ward.slug}`}
+            class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white border border-slate-700 transition-colors"
+          >
+            Bản Đồ Quy Hoạch
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <!-- 3-Pillar Navigation -->
+    <WardTriPillarNav
+      provinceSlug={province.slug}
+      provinceName={province.name}
+      wardSlug={ward.slug}
+      wardName={ward.name}
+      activeTab="sap-nhap"
+    />
+
+    <!-- Key Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Quy Mô Dân Số</span>
+        <div class="text-2xl font-extrabold text-slate-900 font-mono mt-1">
+          {formatNumber(ward.population)} <span class="text-xs font-normal text-slate-500">người</span>
+        </div>
+        <p class="text-xs text-slate-500">Đạt tiêu chuẩn quy mô dân số cấp xã.</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Diện Tích Tự Nhiên</span>
+        <div class="text-2xl font-extrabold text-brand-700 font-mono mt-1">
+          {ward.area_km2 || 'Đang cập nhật'} <span class="text-xs font-normal text-slate-500">km²</span>
+        </div>
+        <p class="text-xs text-slate-500">Sau khi hợp nhất toàn diện ranh giới địa chính.</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Cơ Sở Pháp Lý</span>
+        <div class="text-sm font-bold text-emerald-700 mt-1">
+          {ward.resolution_no || 'Nghị quyết của UBTVQH'}
+        </div>
+        <p class="text-xs text-slate-500">Kỳ họp thứ 38 Ủy ban Thường vụ Quốc hội khóa XV.</p>
+      </div>
+    </div>
+
+    <!-- Administrative Merger Breakdown -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+          1. Phương Án Sắp Xếp & Lịch Sử Sáp Nhập
+        </h2>
+        <div class="text-xs text-slate-700 space-y-3 leading-relaxed">
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="font-bold text-slate-900 block mb-1">Nguồn gốc đơn vị hành chính cũ:</span>
+            <p class="text-slate-600">{ward.merged_from || 'Sáp nhập toàn bộ diện tích tự nhiên và quy mô dân số của các đơn vị hành chính liền kề.'}</p>
+          </div>
+          <p>
+            Sau khi sắp xếp, <strong>{ward.name}</strong> có tư cách pháp nhân mới, kế thừa toàn bộ quyền, nghĩa vụ và trách nhiệm pháp lý của các đơn vị hành chính cũ trước sáp nhập.
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+          2. Hướng Dẫn Thủ Tục Giấy Tờ & Đổi Sổ Đỏ Cho Người Dân
+        </h2>
+        <div class="text-xs text-slate-700 space-y-3 leading-relaxed">
+          <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950">
+            <strong class="block mb-1">Quy định chuyển tiếp Sổ đỏ:</strong>
+            <p>Các Giấy chứng nhận quyền sử dụng đất (Sổ đỏ, Sổ hồng) đã cấp trước đây mang tên đơn vị hành chính cũ <strong>VẪN CÓ GIÁ TRỊ PHÁP LÝ NGUYÊN VẸN</strong>. Người dân không bắt buộc phải đi đổi sổ mới trừ khi thực hiện giao dịch chuyển nhượng, tặng cho hoặc có nhu cầu tự nguyện cấp đổi.</p>
+          </div>
+          <ul class="list-disc pl-4 space-y-1 text-slate-600">
+            <li>Người dân được <strong>miễn toàn bộ lệ phí</strong> khi thực hiện xác nhận thay đổi địa giới hành chính trên trang 4 của Sổ đỏ.</li>
+            <li>Các loại giấy tờ tùy thân như CCCD, đăng ký kinh doanh được cập nhật tự động qua Cơ sở dữ liệu quốc gia về dân cư.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cadastral Map Island -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Bản Đồ Ranh Giới Hành Chính & Thửa Đất {ward.name}</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Xác định ranh giới đơn vị hành chính mới trên nền bản đồ số</p>
+        </div>
+        <a href={`/quy-hoach/${province.slug}/${ward.slug}`} class="text-xs font-semibold text-brand-600 hover:underline">
+          Xem bản đồ quy hoạch phân khu &rarr;
+        </a>
+      </div>
+      <CadastralMapIsland
+        lat={ward.lat}
+        lon={ward.lon}
+        zoom={15}
+        provinceName={ward.name}
+        provinceSlug={province.slug}
+      />
+    </div>
+
+    <!-- Sibling Wards in Same Province -->
+    {sibling_wards && sibling_wards.length > 0 && (
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h3 class="text-base font-bold text-slate-900 mb-3">
+          Các Đơn Vị Hành Chính Khác Thuộc {province.name}
+        </h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          {sibling_wards.slice(0, 18).map((sw) => (
+            <a
+              href={`/sap-nhap-hanh-chinh/${province.slug}/${sw.slug}`}
+              class="p-2.5 rounded-lg border border-slate-100 hover:border-brand-500/40 hover:bg-slate-50 text-xs transition-all block text-center truncate"
+              title={sw.name}
+            >
+              <span class="font-semibold text-slate-800 block truncate">{sw.name}</span>
+              <span class="text-[11px] text-slate-500 block mt-0.5">{formatNumber(sw.population)} dân</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</BaseLayout>

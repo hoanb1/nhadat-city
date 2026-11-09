@@ -1,0 +1,128 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { getArticle, getArticles } from '../../lib/api';
+import { formatDateVi } from '../../lib/formatters';
+import { generateArticleSchema, generateFAQSchema } from '../../lib/seo';
+
+const { slug } = Astro.params;
+const article = slug ? await getArticle(slug) : null;
+
+if (!article) {
+  return Astro.redirect('/phap-ly', 301);
+}
+
+const relatedArticles = await getArticles(6);
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const articleSchema = generateArticleSchema(
+  article.title,
+  article.summary,
+  `/phap-ly/${article.slug}`,
+  article.published_at,
+  article.updated_at,
+  siteUrl
+);
+const faqSchema = generateFAQSchema(article.faqs);
+
+// Combine schemas
+const combinedSchema = {
+  '@context': 'https://schema.org',
+  '@graph': [articleSchema, faqSchema].filter(Boolean),
+};
+---
+
+<BaseLayout
+  title={`${article.title} — Pháp Lý NhaDat.City`}
+  description={article.summary}
+  schema={combinedSchema}
+>
+  <div class="bg-slate-900 text-white py-12 border-b border-slate-800">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[
+          { name: 'Pháp Lý', url: '/phap-ly' },
+          { name: article.title, url: `/phap-ly/${article.slug}` },
+        ]} />
+      </div>
+
+      <div class="mt-4">
+        <div class="flex items-center gap-2 text-xs text-brand-400 font-semibold mb-3">
+          <span>Ban Pháp Lý NhaDat.City</span>
+          <span>•</span>
+          <span>Xuất bản: {formatDateVi(article.published_at)}</span>
+          <span>•</span>
+          <span>{article.word_count} từ</span>
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
+          {article.title}
+        </h1>
+        <p class="text-slate-300 text-sm sm:text-base mt-3 leading-relaxed">
+          {article.summary}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <!-- Article Body Content -->
+    <article class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-10 shadow-sm prose prose-slate max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-p:text-slate-700 prose-p:leading-relaxed prose-li:text-slate-700 text-sm sm:text-base">
+      <Fragment set:html={article.content_html} />
+    </article>
+
+    <!-- FAQ Section -->
+    {article.faqs && article.faqs.length > 0 && (
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+        <h3 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+          <svg class="w-5 h-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Câu Hỏi Thường Gặp (Giải Đáp Pháp Lý)
+        </h3>
+        <div class="divide-y divide-slate-100 text-sm">
+          {article.faqs.map((faq: any) => (
+            <div class="py-3.5 space-y-1">
+              <h4 class="font-bold text-slate-900 text-sm sm:text-base">{faq.q || faq.question}</h4>
+              <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">{faq.a || faq.answer}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- Related Tools Callout -->
+    <div class="p-6 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-brand-50 border border-brand-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>
+        <h4 class="font-bold text-slate-900 text-base">Cần Tính Thuế Phí Sang Tên Sổ Đỏ?</h4>
+        <p class="text-xs text-slate-600 mt-1">Sử dụng công cụ tính thuế TNCN 2%, lệ phí trước bạ và phí công chứng chuẩn xác.</p>
+      </div>
+      <a
+        href="/cong-cu/tinh-thue-phi-sang-ten"
+        class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs transition-colors shadow-sm whitespace-nowrap"
+      >
+        Tính Thuế Phí Ngay &rarr;
+      </a>
+    </div>
+
+    <!-- Related Legal Articles -->
+    {relatedArticles && relatedArticles.length > 0 && (
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+        <h3 class="text-base font-bold text-slate-900 mb-4">Các Bài Viết Cẩm Nang Pháp Lý Liên Quan</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {relatedArticles.filter(a => a.slug !== article.slug).slice(0, 4).map((ra) => (
+            <a
+              href={`/phap-ly/${ra.slug}`}
+              class="block p-4 rounded-xl border border-slate-200 hover:border-brand-500/50 hover:shadow-sm transition-all"
+            >
+              <span class="text-[11px] text-slate-400 block mb-1">{formatDateVi(ra.published_at)}</span>
+              <h4 class="font-bold text-slate-900 text-sm hover:text-brand-600 transition-colors line-clamp-2 leading-snug">
+                {ra.title}
+              </h4>
+              <p class="text-xs text-slate-500 mt-1.5 line-clamp-2">{ra.summary}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</BaseLayout>

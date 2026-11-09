@@ -1,0 +1,144 @@
+---
+import ToolLayout from '../../../layouts/ToolLayout.astro';
+import MortgageCalculatorIsland from '../../../components/islands/MortgageCalculatorIsland.astro';
+import { calculateMortgage } from '../../../lib/calc/mortgage';
+import { BANK_MAP, BANKS } from '../../../lib/constants/banks';
+import { formatVND, formatPercent } from '../../../lib/formatters';
+import { generateFinancialProductSchema } from '../../../lib/seo';
+
+const { bank: bankSlug } = Astro.params;
+const bank = bankSlug ? BANK_MAP[bankSlug] : null;
+
+if (!bank) {
+  return Astro.redirect('/cong-cu/tinh-lai-suat-vay', 301);
+}
+
+// SSR Pre-calculated schedule for this specific bank (2 billion loan, max term, bank's promo 12m rate)
+const sampleLoanAmount = 2000000000;
+const sampleMonths = Math.min(bank.max_term_years, 20) * 12;
+const sampleMortgage = calculateMortgage(sampleLoanAmount, sampleMonths, bank.promo_rate_12m, 'decreasing');
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateFinancialProductSchema(
+  bank.bank_name,
+  `Gói Vay Mua Nhà ${bank.short_name} (${bank.promo_rate_12m}%/năm)`,
+  bank.promo_rate_12m,
+  `/cong-cu/tinh-lai-suat-vay/${bank.slug}`,
+  siteUrl
+);
+---
+
+<ToolLayout
+  title={`Tính Lãi Suất Vay Mua Nhà ${bank.bank_name} (${bank.promo_rate_12m}%/năm)`}
+  description={`Bảng tính lịch trả nợ vay mua nhà trả góp ngân hàng ${bank.bank_name}. Lãi suất ưu đãi ${bank.promo_rate_12m}%/năm, thời hạn vay tới ${bank.max_term_years} năm, hạn mức ${bank.max_ltv_pct}% giá trị.`}
+  toolName={`Tính Lãi Vay — ${bank.short_name}`}
+  schema={schema}
+>
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div class="lg:col-span-7 space-y-6">
+      <MortgageCalculatorIsland initialBankSlug={bank.slug} />
+
+      <!-- SSR Table for this bank -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Lịch Trả Nợ 12 Tháng Đầu — {bank.short_name}</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Vốn vay 2 tỷ • Lãi suất {bank.promo_rate_12m}%/năm • Dư nợ giảm dần</p>
+          </div>
+          <span class="text-xs font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+            {bank.short_name} SSOT
+          </span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs table-compact divide-y divide-slate-100">
+            <thead class="bg-slate-50 text-slate-600 font-semibold">
+              <tr>
+                <th class="py-2.5 px-3">Tháng</th>
+                <th class="py-2.5 px-3">Gốc</th>
+                <th class="py-2.5 px-3">Lãi</th>
+                <th class="py-2.5 px-3">Tổng Trả</th>
+                <th class="py-2.5 px-3">Dư Nợ Còn Lại</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-mono">
+              {sampleMortgage.schedule.slice(0, 12).map((item) => (
+                <tr class="hover:bg-slate-50/80">
+                  <td class="py-2 px-3 font-sans font-medium text-slate-800">Tháng {item.month}</td>
+                  <td class="py-2 px-3 text-slate-700">{formatVND(item.principal_paid)}</td>
+                  <td class="py-2 px-3 text-amber-600">{formatVND(item.interest_paid)}</td>
+                  <td class="py-2 px-3 font-bold text-brand-700">{formatVND(item.total_payment)}</td>
+                  <td class="py-2 px-3 text-slate-500">{formatVND(item.remaining_balance)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Bank Policy & Other Banks -->
+    <div class="lg:col-span-5 space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
+          Chính Sách Vay Mua Nhà — {bank.bank_name}
+        </h3>
+
+        <div class="divide-y divide-slate-100 text-xs">
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-500">Gói ưu đãi 6 tháng:</span>
+            <span class="font-bold text-slate-900 font-mono">{formatPercent(bank.promo_rate_6m)}/năm</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-500">Gói ưu đãi 12 tháng:</span>
+            <span class="font-bold text-brand-700 font-mono text-sm">{formatPercent(bank.promo_rate_12m)}/năm</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-500">Gói ưu đãi 24 tháng:</span>
+            <span class="font-bold text-slate-900 font-mono">{formatPercent(bank.promo_rate_24m)}/năm</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-500">Lãi suất thả nổi sau ưu đãi:</span>
+            <span class="font-mono text-slate-700">{formatPercent(bank.floating_rate)}/năm</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-500">Hạn mức vay tối đa (LTV):</span>
+            <span class="font-bold text-emerald-700">{bank.max_ltv_pct}% giá trị TSBĐ</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-500">Thời gian vay tối đa:</span>
+            <span class="font-semibold text-slate-900">{bank.max_term_years} năm</span>
+          </div>
+          <div class="py-2.5 flex justify-between">
+            <span class="text-slate-500">Ân hạn nợ gốc:</span>
+            <span class="font-semibold text-slate-900">{bank.grace_period_months} tháng</span>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+          <p class="font-semibold text-slate-800">Phí trả nợ trước hạn:</p>
+          <p class="text-slate-600 leading-relaxed">{bank.early_repayment_fee}</p>
+          <p class="text-slate-500 pt-1 leading-snug">{bank.notes}</p>
+        </div>
+      </div>
+
+      <!-- Other Banks in Same Group -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-900 mb-3">
+          Ngân Hàng Cùng Nhóm ({bank.bank_group})
+        </h3>
+        <div class="space-y-2 text-xs">
+          {BANKS.filter((b) => b.bank_group === bank.bank_group && b.slug !== bank.slug).slice(0, 6).map((b) => (
+            <a
+              href={`/cong-cu/tinh-lai-suat-vay/${b.slug}`}
+              class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all"
+            >
+              <span class="font-medium text-slate-800">{b.short_name}</span>
+              <span class="font-mono font-bold text-brand-700">{b.promo_rate_12m}%</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolLayout>

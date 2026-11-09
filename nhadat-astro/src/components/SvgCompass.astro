@@ -1,0 +1,194 @@
+---
+import type { FengShuiResult } from '../lib/types';
+
+interface Props {
+  fengShui: FengShuiResult;
+}
+
+const { fengShui } = Astro.props;
+
+// 8 directions in degrees (North = 0/360)
+const directions = [
+  { dir: 'Bắc', angle: 0 },
+  { dir: 'Đông Bắc', angle: 45 },
+  { dir: 'Đông', angle: 90 },
+  { dir: 'Đông Nam', angle: 135 },
+  { dir: 'Nam', angle: 180 },
+  { dir: 'Tây Nam', angle: 225 },
+  { dir: 'Tây', angle: 270 },
+  { dir: 'Tây Bắc', angle: 315 },
+];
+
+function getDirectionInfo(dir: string) {
+  const fav = fengShui.favorable_directions.find((d) => d.direction === dir);
+  if (fav) {
+    return {
+      name: dir,
+      star: fav.star,
+      isGood: true,
+      color: '#059669',
+      bgColor: '#ecfdf5',
+      score: fav.score,
+    };
+  }
+  const unfav = fengShui.unfavorable_directions.find((d) => d.direction === dir);
+  return {
+    name: dir,
+    star: unfav?.star || 'Hung',
+    isGood: false,
+    color: '#e11d48',
+    bgColor: '#fff1f2',
+    score: 0,
+  };
+}
+
+const primaryFav = fengShui.favorable_directions[0];
+---
+
+<div class="flex flex-col items-center justify-center p-4" id="compass-wrapper">
+  <div class="relative w-72 h-72 sm:w-80 sm:h-80">
+    <svg
+      id="compass-svg"
+      viewBox="0 0 320 320"
+      class="w-full h-full transform transition-transform duration-700 ease-out"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <!-- Outer circle -->
+      <circle cx="160" cy="160" r="150" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
+      <circle cx="160" cy="160" r="140" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+      <circle cx="160" cy="160" r="85" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5" />
+
+      <!-- Center Yin-Yang / Quái Số Circle -->
+      <circle cx="160" cy="160" r="42" fill="#0f172a" />
+      <text id="compass-cung-phi" x="160" y="155" font-size="14" font-weight="bold" fill="#34d399" text-anchor="middle">
+        {fengShui.cung_phi}
+      </text>
+      <text id="compass-quai-so" x="160" y="172" font-size="10" fill="#94a3b8" text-anchor="middle">
+        Quái {fengShui.quai_so}
+      </text>
+
+      <!-- 8 Sectors / Wedges -->
+      <g id="compass-sectors">
+        {directions.map((d) => {
+          const info = getDirectionInfo(d.dir);
+          const rad = (d.angle - 90) * (Math.PI / 180);
+          const textRadius = 115;
+          const tx = 160 + textRadius * Math.cos(rad);
+          const ty = 160 + textRadius * Math.sin(rad);
+
+          const dotRadius = 138;
+          const dx = 160 + dotRadius * Math.cos(rad);
+          const dy = 160 + dotRadius * Math.sin(rad);
+
+          return (
+            <g class="compass-sector" data-direction={d.dir}>
+              <line
+                x1="160"
+                y1="160"
+                x2={dx}
+                y2={dy}
+                stroke={info.isGood ? '#10b981' : '#f43f5e'}
+                stroke-width={info.isGood ? '2' : '1'}
+                stroke-dasharray={info.isGood ? 'none' : '2,2'}
+              />
+              <circle cx={dx} cy={dy} r="4" fill={info.isGood ? '#059669' : '#e11d48'} />
+              
+              <text
+                x={tx}
+                y={ty - 4}
+                font-size="10"
+                font-weight="bold"
+                fill={info.isGood ? '#047857' : '#991b1b'}
+                text-anchor="middle"
+              >
+                {d.dir}
+              </text>
+              <text
+                x={tx}
+                y={ty + 8}
+                font-size="8.5"
+                fill={info.isGood ? '#059669' : '#dc2626'}
+                text-anchor="middle"
+                class="sector-star"
+              >
+                {info.star}
+              </text>
+            </g>
+          );
+        })}
+      </g>
+
+      <!-- Dynamic Rotating Needle Pointer Group -->
+      <g id="compass-needle-group" style="transform-origin: 160px 160px; transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);">
+        <!-- North / Good direction needle (Emerald) -->
+        <polygon points="160,50 166,160 154,160" fill="#059669" opacity="0.85" />
+        <!-- South needle (Rose) -->
+        <polygon points="160,270 166,160 154,160" fill="#e11d48" opacity="0.4" />
+        <!-- Needle Pivot Cap -->
+        <circle cx="160" cy="160" r="7" fill="#ffffff" stroke="#0f172a" stroke-width="2" />
+        <circle cx="160" cy="160" r="3" fill="#059669" />
+      </g>
+    </svg>
+  </div>
+
+  <!-- Dynamic Active Heading Badge -->
+  <div
+    id="compass-active-heading"
+    class="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 mt-3 shadow-sm flex items-center gap-1.5"
+  >
+    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+    <span id="heading-label">
+      Hướng Sinh Khí (Tốt Nhất): {primaryFav ? `${primaryFav.direction} (${primaryFav.star})` : 'Đang tính...'}
+    </span>
+  </div>
+
+  <div class="flex items-center gap-6 mt-3 text-xs">
+    <div class="flex items-center gap-1.5">
+      <span class="w-3 h-3 rounded-full bg-emerald-600"></span>
+      <span class="text-slate-700 font-medium">Hướng Đại Cát (Sinh Khí, Diên Niên, Thiên Y, Phục Vị)</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <span class="w-3 h-3 rounded-full bg-rose-600"></span>
+      <span class="text-slate-700 font-medium">Hướng Hung Kỵ</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const dirAngles: Record<string, number> = {
+      'Bắc': 0,
+      'Đông Bắc': 45,
+      'Đông': 90,
+      'Đông Nam': 135,
+      'Nam': 180,
+      'Tây Nam': 225,
+      'Tây': 270,
+      'Tây Bắc': 315,
+    };
+
+    window.addEventListener('nhadat:fengshui-update', ((e: CustomEvent) => {
+      const data = e.detail;
+      if (!data) return;
+
+      const cungPhiEl = document.getElementById('compass-cung-phi');
+      const quaiSoEl = document.getElementById('compass-quai-so');
+      const headingLabel = document.getElementById('heading-label');
+      const needleEl = document.getElementById('compass-needle-group');
+
+      if (cungPhiEl) cungPhiEl.textContent = data.cung_phi || '';
+      if (quaiSoEl) quaiSoEl.textContent = `Quái ${data.quai_so || ''}`;
+
+      const primary = data.favorable_directions?.[0];
+      if (headingLabel && primary) {
+        headingLabel.textContent = `Hướng Sinh Khí (Tốt Nhất): ${primary.direction} (${primary.star})`;
+      }
+
+      // Rotate needle toward best favorable direction
+      if (primary && dirAngles[primary.direction] !== undefined && needleEl) {
+        const deg = dirAngles[primary.direction];
+        needleEl.style.transform = `rotate(${deg}deg)`;
+      }
+    }) as EventListener);
+  })();
+</script>

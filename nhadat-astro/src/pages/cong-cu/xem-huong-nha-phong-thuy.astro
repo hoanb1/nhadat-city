@@ -1,0 +1,76 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import FengShuiCalculatorIsland from '../../components/islands/FengShuiCalculatorIsland.astro';
+import SvgCompass from '../../components/SvgCompass.astro';
+import { calculateFengShui } from '../../lib/constants/fengShui';
+import { generateWebApplicationSchema } from '../../lib/seo';
+
+// SSR Baseline Feng Shui calculation (1988, Nam mạng)
+const sampleFengShui = calculateFengShui(1988, 'nam');
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateWebApplicationSchema(
+  'Công Cụ Xem Hướng Nhà Phong Thủy Bát Trạch Theo Tuổi',
+  'Tính Cung Phi, Quái Số, phân biệt Đông Tứ Mệnh và Tây Tứ Mệnh. La bàn Bát Trạch 8 hướng xác định Sinh Khí, Diên Niên, Thiên Y đón tài lộc gia chủ.',
+  '/cong-cu/xem-huong-nha-phong-thuy',
+  'LifestyleApplication',
+  siteUrl
+);
+---
+
+<ToolLayout
+  title="Xem Hướng Nhà Phong Thủy Bát Trạch Theo Năm Sinh & Giới Tính"
+  description="Tra cứu hướng nhà hợp phong thủy theo phái Bát Trạch Minh Cảnh. Xác định Cung Phi, Quái Số, 4 hướng đại cát đón tài lộc và hóa giải các hướng hung kỵ."
+  toolName="Xem Hướng Nhà Phong Thủy"
+  schema={schema}
+>
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div class="lg:col-span-7 space-y-6">
+      <FengShuiCalculatorIsland />
+    </div>
+
+    <!-- Right Column: Vector Compass & Feng Shui Reference -->
+    <div class="lg:col-span-5 space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
+          <span>La Bàn Vector Bát Trạch (SSR Mẫu 1988)</span>
+          <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            {sampleFengShui.cung_phi} — Quái {sampleFengShui.quai_so}
+          </span>
+        </h3>
+
+        <!-- SSR Inline SVG Compass -->
+        <SvgCompass fengShui={sampleFengShui} />
+      </div>
+
+      <!-- Meaning of 8 Directions -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-slate-900">
+          Ý Nghĩa 8 Sao Trong Bát Trạch Minh Cảnh
+        </h3>
+        <div class="divide-y divide-slate-100 text-xs">
+          <div class="py-2">
+            <span class="font-bold text-emerald-700">1. Sinh Khí (Thuộc sao Tham Lang):</span>
+            <p class="text-slate-500 mt-0.5">Sao tốt nhất, mang lại vượng khí, tài lộc dồi dào, thăng quan tiến chức, danh tiếng hiển vinh.</p>
+          </div>
+          <div class="py-2">
+            <span class="font-bold text-emerald-700">2. Thiên Y (Thuộc sao Cự Môn):</span>
+            <p class="text-slate-500 mt-0.5">Chủ về sức khỏe, tiêu trừ bệnh tật, gia tăng tuổi thọ, tâm tính bình an, gặp quý nhân trợ giúp.</p>
+          </div>
+          <div class="py-2">
+            <span class="font-bold text-emerald-700">3. Diên Niên (Thuộc sao Vũ Khúc):</span>
+            <p class="text-slate-500 mt-0.5">Chủ về hòa thuận, củng cố các mối quan hệ tình cảm, gia đình êm ấm, vợ chồng thủy chung.</p>
+          </div>
+          <div class="py-2">
+            <span class="font-bold text-emerald-700">4. Phục Vị (Thuộc sao Tả Phù):</span>
+            <p class="text-slate-500 mt-0.5">Chủ về sự bình yên tĩnh tại, thi cử đỗ đạt, công danh vững chắc, giữ gìn tài sản tổ nghiệp.</p>
+          </div>
+          <div class="py-2">
+            <span class="font-bold text-rose-700">5. Tuyệt Mệnh (Thuộc sao Phá Quân):</span>
+            <p class="text-slate-500 mt-0.5">Hướng xấu nhất, tổn hại sức khỏe, tai bay vạ gió, hao tán tài sản nặng nề.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolLayout>

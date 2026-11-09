@@ -1,0 +1,75 @@
+{% import "partials/icons.html" as icons %}
+<footer class="bg-slate-900 text-slate-300 text-xs py-10 px-4 border-t border-slate-800 mt-auto">
+  <div class="max-w-7xl mx-auto space-y-8">
+
+    <div>
+      <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+        {{ icons::lucide_home("w-4 h-4 text-emerald-400") }}
+        <span>Mua bán nhà đất 63 tỉnh thành</span>
+      </h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-3 gap-y-1.5">
+        {% for (slug, name) in page.provinces %}<a href="/{{ slug }}" class="hover:text-emerald-400 transition-colors truncate">Nhà đất {{ name }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div>
+      <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+        {{ icons::lucide_key("w-4 h-4 text-amber-400") }}
+        <span>Cho thuê nhà đất toàn quốc</span>
+      </h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-3 gap-y-1.5">
+        {% for (slug, name) in page.provinces %}<a href="/{{ slug }}?propertyType=cho_thue" class="hover:text-amber-400 transition-colors truncate">Cho thuê {{ name }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div>
+      <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+        {{ icons::lucide_building("w-4 h-4 text-indigo-400") }}
+        <span>Dự án bất động sản</span>
+      </h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-3 gap-y-1.5">
+        {% for (slug, name) in page.provinces %}<a href="/du-an?province={{ slug }}" class="hover:text-indigo-400 transition-colors truncate">Dự án {{ name }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div>
+      <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+        {{ icons::lucide_map("w-4 h-4 text-blue-400") }}
+        <span>Tra cứu bản đồ quy hoạch</span>
+      </h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-3 gap-y-1.5">
+        {% for (slug, name) in page.provinces %}<a href="/quy-hoach/{{ slug }}" class="hover:text-blue-400 transition-colors truncate">Quy hoạch {{ name }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div>
+      <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+        {{ icons::lucide_book("w-4 h-4 text-purple-400") }}
+        <span>Cẩm nang &amp; bản đồ quy hoạch 2026</span>
+      </h3>
+      <div class="flex flex-wrap gap-x-4 gap-y-2 text-slate-300">
+        <a href="/blog" class="hover:text-purple-400 font-medium">Tất cả bài phân tích quy hoạch</a>
+        <a href="/thong-ke" class="hover:text-purple-400 font-medium">Thống kê giá đất thị trường</a>
+        <a href="/quy-hoach" class="hover:text-purple-400 font-medium">Bản đồ số không gian VN-2000</a>
+        <a href="/du-an" class="hover:text-purple-400 font-medium">Đại đô thị &amp; dự án trọng điểm</a>
+      </div>
+    </div>
+
+    <div class="pt-6 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400 text-xs">
+      <p>© {{ page.year }} NhaDat.City — Nền tảng bản đồ bất động sản thông minh hàng đầu Việt Nam</p>
+      <div class="flex gap-4">
+        <a href="/about" class="hover:text-white">Về chúng tôi</a>
+        <a href="/contact" class="hover:text-white">Liên hệ</a>
+        <a href="/blog" class="hover:text-white">Cẩm nang</a>
+        <a href="/thong-ke" class="hover:text-white">Thống kê</a>
+        <a href="/terms" class="hover:text-white">Điều khoản</a>
+        <a href="/privacy" class="hover:text-white">Bảo mật</a>
+        <a href="/sitemap.xml" class="hover:text-white">Sitemap</a>
+      </div>
+    </div>
+  </div>
+</footer>

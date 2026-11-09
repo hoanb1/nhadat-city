@@ -1,0 +1,154 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { getLandCode } from '../../lib/api';
+import { LAND_CODES } from '../../lib/constants/landCodes';
+import { generateFAQSchema } from '../../lib/seo';
+
+const { code: codeParam } = Astro.params;
+const landCode = codeParam ? await getLandCode(codeParam) : null;
+
+if (!landCode) {
+  return Astro.redirect('/ma-loai-dat', 301);
+}
+
+const faqs = [
+  {
+    q: `Mã loại đất ${landCode.code} là đất gì?`,
+    a: `${landCode.code} là ký hiệu viết tắt của "${landCode.name}", thuộc nhóm ${landCode.group_name} theo quy định của Luật Đất đai Việt Nam.`,
+  },
+  {
+    q: `Đất ${landCode.code} có được phép xây dựng nhà ở không?`,
+    a: landCode.buildable_guide,
+  },
+  {
+    q: `Thời hạn sử dụng đất ${landCode.code} là bao lâu?`,
+    a: `Thời hạn sử dụng đất ${landCode.code} là: ${landCode.max_term_text}.`,
+  },
+  {
+    q: `Chuyển đổi đất ${landCode.code} sang đất ở tính tiền như thế nào?`,
+    a: landCode.conversion_fee_rule,
+  },
+];
+
+const schema = generateFAQSchema(faqs);
+---
+
+<BaseLayout
+  title={`Mã Loại Đất ${landCode.code} Là Gì? Quy Định Xây Dựng & Chuyển Mục Đích Mới Nhất`}
+  description={`Tra cứu chi tiết mã đất ${landCode.code} (${landCode.name}). Quy định xây dựng, thời hạn sử dụng đất, thủ tục và công thức tính tiền chuyển mục đích sử dụng đất.`}
+  schema={schema}
+>
+  <div class="bg-slate-900 text-white py-10 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[
+          { name: 'Mã Loại Đất', url: '/ma-loai-dat' },
+          { name: `${landCode.code} - ${landCode.name}`, url: `/ma-loai-dat/${landCode.code.toLowerCase()}` },
+        ]} />
+      </div>
+
+      <div class="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
+            <span>{landCode.group_name}</span>
+            <span class="w-1 h-1 rounded-full bg-brand-400"></span>
+            <span>Ký Hiệu Sổ Đỏ SSOT</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-lg flex-shrink-0 shadow-sm" style={`background-color: ${landCode.color_hex}`}></span>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Mã Đất {landCode.code}: {landCode.name}
+            </h1>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a
+            href="/cong-cu/tinh-thue-phi-sang-ten"
+            class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-semibold text-white transition-colors shadow-sm"
+          >
+            Tính Phí Sang Tên Sổ Đỏ
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <!-- Key Specifications Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Thời Hạn Sử Dụng Đất</span>
+        <div class="text-base font-bold text-slate-900 leading-snug">
+          {landCode.max_term_text}
+        </div>
+        <p class="text-xs text-slate-500">Quy định tại Điều 171 & 172 Luật Đất đai.</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Quyền Xây Dựng Nhà Ở</span>
+        <div class={`text-base font-bold leading-snug ${landCode.is_residential ? 'text-emerald-700' : 'text-amber-700'}`}>
+          {landCode.is_residential ? 'Được phép xây dựng nhà ở' : 'Không được tự ý xây nhà'}
+        </div>
+        <p class="text-xs text-slate-500">{landCode.is_residential ? 'Cấp giấy phép xây dựng nhà ở riêng lẻ.' : 'Phải làm thủ tục chuyển mục đích sang đất ở.'}</p>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Màu Thể Hiện Bản Đồ</span>
+        <div class="flex items-center gap-2">
+          <span class="w-5 h-5 rounded" style={`background-color: ${landCode.color_hex}`}></span>
+          <span class="font-mono text-sm font-bold text-slate-800">{landCode.color_hex.toUpperCase()}</span>
+        </div>
+        <p class="text-xs text-slate-500">Chuẩn ký hiệu bản đồ quy hoạch toàn quốc.</p>
+      </div>
+    </div>
+
+    <!-- Detailed Legal & Technical Sections -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Buildability & Legal Summary -->
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+          1. Quy Định Pháp Lý & Xây Dựng Của Đất {landCode.code}
+        </h2>
+        <div class="space-y-3 text-xs text-slate-700 leading-relaxed">
+          <p class="font-medium text-slate-900">{landCode.legal_summary}</p>
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+            <span class="font-bold text-slate-900 block">Hướng dẫn xây dựng:</span>
+            <p class="text-slate-600">{landCode.buildable_guide}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conversion Fee Rules -->
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+          2. Quy Tắc Tính Tiền Chuyển Mục Đích Sử Dụng Đất
+        </h2>
+        <div class="space-y-3 text-xs text-slate-700 leading-relaxed">
+          <p>{landCode.conversion_fee_rule}</p>
+          <div class="p-4 rounded-xl bg-brand-50 border border-brand-200 text-brand-900 space-y-1.5">
+            <span class="font-bold block">Công thức tính tiền sử dụng đất nộp ngân sách:</span>
+            <p class="font-mono text-xs font-semibold">Tiền nộp = (Giá đất ở - Giá đất {landCode.code}) x Diện tích (m²)</p>
+            <p class="text-[11px] text-brand-700">Áp dụng theo Bảng giá đất do UBND cấp tỉnh ban hành tại thời điểm có quyết định cho phép chuyển mục đích.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ Accordion / List -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+      <h3 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+        Câu Hỏi Thường Gặp Về Mã Đất {landCode.code} ({landCode.name})
+      </h3>
+      <div class="divide-y divide-slate-100 text-xs">
+        {faqs.map((faq) => (
+          <div class="py-3 space-y-1">
+            <h4 class="font-bold text-slate-900 text-sm">{faq.q}</h4>
+            <p class="text-slate-600 leading-relaxed">{faq.a}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</BaseLayout>

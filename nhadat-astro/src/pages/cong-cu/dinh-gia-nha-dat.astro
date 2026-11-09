@@ -1,0 +1,112 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import ValuationCalculatorIsland from '../../components/islands/ValuationCalculatorIsland.astro';
+import { postValuation } from '../../lib/api';
+import { generateWebApplicationSchema } from '../../lib/seo';
+
+// SSR Pre-calculated sample valuation (Zero JS baseline for search engines)
+const sampleValuation = await postValuation({
+  province_slug: 'ha-noi',
+  property_type: 'nha_mat_pho',
+  area_m2: 85,
+  facade_width_m: 5,
+  road_width_m: 8,
+  floors: 4,
+  has_red_book: true,
+});
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateWebApplicationSchema(
+  'Công Cụ Định Giá Nhà Đất AI Lượng Hóa & Phát Hiện Dị Thường Giá',
+  'Mô hình định lượng bất động sản tự động (AVM) ước tính giá trị thị trường, phát hiện tin đăng giá ảo/dị thường dựa trên phân vị giá thực tế.',
+  '/cong-cu/dinh-gia-nha-dat',
+  'FinancialApplication',
+  siteUrl
+);
+---
+
+<ToolLayout
+  title="Định Giá Nhà Đất AI Lượng Hóa & Phát Hiện Dị Thường Giá (AVM)"
+  description="Công cụ định giá nhà đất thông minh ứng dụng mô hình định lượng (Automated Valuation Model). Ước tính giá trị nhà mặt phố, ngõ hẻm, căn hộ chung cư chính xác."
+  toolName="Định Giá Nhà Đất AI"
+  schema={schema}
+>
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <!-- Left Column: Interactive Island -->
+    <div class="lg:col-span-7 space-y-6">
+      <ValuationCalculatorIsland initialProvinceSlug="ha-noi" />
+    </div>
+
+    <!-- Right Column: SSR Quant Methodology & SSR Sample -->
+    <div class="lg:col-span-5 space-y-6">
+      <!-- SSR Baseline Result -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-sm font-bold text-slate-900">Mẫu Định Giá Tham Chiếu (Hà Nội)</h3>
+          <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            SSR Baseline
+          </span>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div class="flex justify-between items-center py-1 border-b border-slate-50">
+            <span class="text-slate-500">Loại hình & Diện tích:</span>
+            <span class="font-bold text-slate-900">Nhà Mặt Phố • 85 m²</span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-slate-50">
+            <span class="text-slate-500">Đơn giá ước tính:</span>
+            <span class="font-bold text-brand-700 font-mono text-sm">{sampleValuation.estimated_price_m2} tr/m²</span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-slate-50">
+            <span class="text-slate-500">Tổng giá trị định giá:</span>
+            <span class="font-extrabold text-slate-900 text-base">{sampleValuation.estimated_total_billion} tỷ đ</span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-slate-50">
+            <span class="text-slate-500">Khoảng giá tin cậy:</span>
+            <span class="text-slate-700 font-semibold">{sampleValuation.lower_bound_billion} - {sampleValuation.upper_bound_billion} tỷ đ</span>
+          </div>
+          <div class="flex justify-between items-center py-1">
+            <span class="text-slate-500">Độ tin cậy thuật toán:</span>
+            <span class="font-bold text-emerald-600">{sampleValuation.confidence_pct}%</span>
+          </div>
+        </div>
+
+        <!-- Valuation Factors -->
+        <div class="mt-4 pt-4 border-t border-slate-100">
+          <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
+            Hệ Số Trọng Số Ảnh Hưởng Đến Giá
+          </h4>
+          <div class="space-y-2 text-xs">
+            {(sampleValuation?.valuation_factors || []).map((f) => (
+              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                <div class="flex justify-between font-semibold text-slate-800">
+                  <span>{f.name}</span>
+                  <span class="text-brand-600">+{f.impact_pct}%</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-0.5">{f.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <!-- Quant Theory Box -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-slate-900">
+          Nguyên Lý Mô Hình Định Giá Định Lượng (AVM)
+        </h3>
+        <div class="text-xs text-slate-600 space-y-2 leading-relaxed">
+          <p>
+            Mô hình AVM của NhaDat.City sử dụng phương pháp <strong>Hồi quy Hedonic (Hedonic Pricing Model)</strong> kết hợp máy học hồi quy phi tuyến tính để bóc tách giá trị bất động sản thành các thuộc tính độc lập:
+          </p>
+          <ul class="list-disc pl-4 space-y-1 text-slate-500">
+            <li><strong>Thuộc tính vị trí:</strong> Tỉnh/thành, khoảng cách trung tâm, quy hoạch phân khu.</li>
+            <li><strong>Thuộc tính hình học:</strong> Mặt tiền, diện tích, chiều sâu, nở hậu/thóp hậu.</li>
+            <li><strong>Thuộc tính giao thông:</strong> Chiều rộng đường trước nhà, lộ giới, quy hoạch mở đường.</li>
+            <li><strong>Thuộc tính pháp lý:</strong> Tình trạng Sổ đỏ, thời hạn sử dụng đất, loại đất (ODT/ONT/CLN).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolLayout>

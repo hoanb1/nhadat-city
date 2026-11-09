@@ -1,0 +1,42 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  toolName: string;
+  schema?: object | null;
+}
+
+const { title, description, toolName, schema } = Astro.props;
+---
+
+<BaseLayout title={title} description={description} schema={schema}>
+  <div class="bg-slate-900 text-white py-10 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[{ name: 'Công Cụ', url: '/cong-cu' }, { name: toolName, url: Astro.url.pathname }]} />
+      </div>
+      <div class="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
+            <span>PropTech Intelligence</span>
+            <span class="w-1 h-1 rounded-full bg-brand-400"></span>
+            <span>SSR + Client Island</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            {toolName}
+          </h1>
+          <p class="text-slate-400 text-xs sm:text-sm mt-1.5 max-w-2xl leading-relaxed">
+            {description}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+    <slot />
+  </div>
+</BaseLayout>

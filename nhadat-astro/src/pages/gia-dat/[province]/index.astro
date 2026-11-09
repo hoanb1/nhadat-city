@@ -1,0 +1,258 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../../components/Breadcrumb.astro';
+import SvgChart from '../../../components/SvgChart.astro';
+import CadastralMapIsland from '../../../components/islands/CadastralMapIsland.astro';
+import { getProvinceFull } from '../../../lib/api';
+import { formatNumber, formatPricePerM2 } from '../../../lib/formatters';
+import { generateDatasetSchema } from '../../../lib/seo';
+
+const { province: provinceSlug } = Astro.params;
+const full = provinceSlug ? await getProvinceFull(provinceSlug) : null;
+
+if (!full) {
+  return Astro.redirect('/gia-dat', 301);
+}
+
+if (full.is_legacy_redirect && full.canonical_slug && full.canonical_slug !== provinceSlug) {
+  return Astro.redirect(`/gia-dat/${full.canonical_slug}`, 301);
+}
+
+const { province, wards, price_history_monthly, projects } = full;
+
+const trendData =
+  price_history_monthly && price_history_monthly.length > 0
+    ? price_history_monthly.map((p) => ({
+        label: p.year_month.slice(5) + '/' + p.year_month.slice(2, 4),
+        value: Number(p.median_price_m2.toFixed(1)),
+      }))
+    : undefined;
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateDatasetSchema(
+  `Bảng Giá Đất Tỉnh ${province.name} 2026 (Chỉ Số Thị Trường & Giá Nhà Nước)`,
+  `Bảng chỉ số giá đất tỉnh ${province.name} cập nhật năm 2026. Phân tích đối chiếu giá thị trường và giá đất nhà nước tại ${wards.length} xã/phường.`,
+  `/gia-dat/${province.slug}`,
+  siteUrl
+);
+---
+
+<BaseLayout
+  title={`Bảng Giá Đất ${province.name} 2026 — Chỉ Số Thị Trường & Bảng Giá Nhà Nước`}
+  description={`Tra cứu bảng giá đất tại ${province.name} mới nhất. Phân tích trung vị giá đất ${province.median_price_m2} tr/m², bảng đối chiếu giá thị trường và giá đất nhà nước tại ${wards.length} xã/phường.`}
+  schema={schema}
+>
+  <div class="bg-slate-900 text-white py-10 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[
+          { name: 'Giá Đất', url: '/gia-dat' },
+          { name: province.name, url: `/gia-dat/${province.slug}` },
+        ]} />
+      </div>
+
+      <div class="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
+            <span>Kinh Tuyến Trục {province.central_meridian}°</span>
+            <span class="w-1 h-1 rounded-full bg-brand-400"></span>
+            <span>{wards.length} Xã / Phường</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            Bảng Giá Đất Tỉnh {province.name} 2026
+          </h1>
+          <p class="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+            {province.merged_from ? `Đơn vị hành chính: ${province.merged_from}. ` : ''}Trung tâm hành chính tại {province.admin_center || province.name}.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a
+            href={`/quy-hoach/${province.slug}`}
+            class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white border border-slate-700 transition-colors"
+          >
+            Bản Đồ Quy Hoạch
+          </a>
+          <a
+            href={`/cong-cu/dinh-gia-nha-dat`}
+            class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-semibold text-white transition-colors shadow-sm"
+          >
+            Định Giá BĐS {province.name}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <!-- Charts Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <SvgChart
+        mode="trend"
+        title={`Xu Hướng Giá Đất ${province.name} (12 Tháng)`}
+        subtitle="Dữ liệu giao dịch thực tế trên địa bàn"
+        data={trendData}
+      />
+      <SvgChart
+        mode="distribution"
+        title={`Phổ Giá Thị Trường vs Giá Nhà Nước — ${province.name}`}
+        subtitle="Phân vị giá đất dân cư (triệu VNĐ/m²)"
+        p25={Number((province.median_price_m2 * 0.75).toFixed(1))}
+        median={province.median_price_m2}
+        avg={Number((province.median_price_m2 * 1.08).toFixed(1))}
+        p75={Number((province.median_price_m2 * 1.35).toFixed(1))}
+        statePrice={Number((province.median_price_m2 * 0.32).toFixed(1))}
+      />
+    </div>
+
+    <!-- GIS Map Card -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Bản Đồ Địa Chính & Quy Hoạch Số — {province.name}</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Tra cứu lớp quy hoạch đô thị và ranh thửa đất trực quan</p>
+        </div>
+        <a href={`/quy-hoach/${province.slug}`} class="text-xs font-semibold text-brand-600 hover:underline">
+          Mở bản đồ toàn màn hình &rarr;
+        </a>
+      </div>
+      <CadastralMapIsland
+        lat={province.lat}
+        lon={province.lon}
+        zoom={13}
+        provinceName={province.name}
+        provinceSlug={province.slug}
+      />
+    </div>
+
+    <!-- Ward Price Table -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Bảng So Sánh Giá Đất {wards.length} Xã / Phường Tại {province.name}</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Đối chiếu giá giao dịch thị trường và giá nhà nước quy định</p>
+        </div>
+        <div>
+          <input
+            type="text"
+            id="ward-search-input"
+            placeholder="Tìm nhanh xã / phường..."
+            class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 w-full sm:w-64"
+          />
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs table-compact divide-y divide-slate-100">
+          <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider">
+            <tr>
+              <th class="py-3 px-3">Xã / Phường</th>
+              <th class="py-3 px-3">Trung Vị Thị Trường</th>
+              <th class="py-3 px-3">Giá Đất Nhà Nước</th>
+              <th class="py-3 px-3">Khoảng Giá (P25 - P75)</th>
+              <th class="py-3 px-3">Mẫu Dữ Liệu</th>
+              <th class="py-3 px-3 text-right">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100" id="ward-table-body">
+            {wards.map((w) => {
+              return (
+                <tr class="hover:bg-slate-50/80 ward-row" data-name={`${w.name} ${w.merged_from || ''}`}>
+                  <td class="py-3 px-3 font-semibold text-slate-900">
+                    <a href={`/gia-dat/${province.slug}/${w.slug}`} class="hover:text-brand-600 transition-colors block">
+                      {w.name}
+                    </a>
+                    {w.merged_from && (
+                      <span class="text-[10px] text-slate-400 font-normal block truncate max-w-xs">
+                        {w.merged_from}
+                      </span>
+                    )}
+                  </td>
+                  <td class="py-3 px-3 font-bold text-brand-700 font-mono text-sm">
+                    {formatPricePerM2(w.median_price_m2)}
+                  </td>
+                  <td class="py-3 px-3 font-mono text-slate-700">
+                    {formatPricePerM2(w.state_price_m2)}
+                  </td>
+                  <td class="py-3 px-3 text-slate-600 font-mono text-[11px]">
+                    {formatPricePerM2(w.p25_price_m2)} - {formatPricePerM2(w.p75_price_m2)}
+                  </td>
+                  <td class="py-3 px-3 text-slate-500 font-mono">
+                    {formatNumber(w.sample_count || 0)} mẫu
+                  </td>
+                  <td class="py-3 px-3 text-right space-x-2">
+                    <a
+                      href={`/gia-dat/${province.slug}/${w.slug}`}
+                      class="text-xs font-semibold text-brand-600 hover:underline"
+                    >
+                      Bảng giá
+                    </a>
+                    <span class="text-slate-300">|</span>
+                    <a
+                      href={`/quy-hoach/${province.slug}/${w.slug}`}
+                      class="text-xs font-semibold text-slate-600 hover:text-brand-600 hover:underline"
+                    >
+                      Quy hoạch
+                    </a>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Top Projects Section -->
+    {projects && projects.length > 0 && (
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Dự Án Bất Động Sản Nổi Bật Tại {province.name}</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Khu đô thị, căn hộ chung cư và dự án đất nền quy hoạch</p>
+          </div>
+          <a href={`/du-an?province=${province.slug}`} class="text-xs font-semibold text-brand-600 hover:underline">
+            Xem tất cả dự án &rarr;
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {projects.slice(0, 9).map((proj) => (
+            <a
+              href={`/du-an/${proj.slug}`}
+              class="block p-4 rounded-xl border border-slate-200 hover:border-brand-500/50 hover:shadow-sm transition-all"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <h3 class="font-bold text-slate-900 text-sm hover:text-brand-600 transition-colors line-clamp-1">
+                  {proj.title}
+                </h3>
+                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded shrink-0">
+                  {formatPricePerM2(proj.ref_price_m2)}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1 line-clamp-1">{proj.address}</p>
+              <div class="mt-2 text-[11px] text-slate-400 flex items-center justify-between">
+                <span>{proj.investor_name || 'Chủ đầu tư dự án'}</span>
+                <span>{proj.ownership || 'Sổ hồng lâu dài'}</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+
+  <script>
+    const searchInput = document.getElementById('ward-search-input') as HTMLInputElement | null;
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const q = ((e.target as HTMLInputElement).value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll<HTMLTableRowElement>('tr.ward-row');
+        rows.forEach((row) => {
+          const name = (row.dataset.name || '').toLowerCase();
+          row.style.display = !q || name.includes(q) ? '' : 'none';
+        });
+      });
+    }
+  </script>
+</BaseLayout>

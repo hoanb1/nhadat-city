@@ -1,0 +1,116 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { getArticles } from '../../lib/api';
+import { formatDateVi } from '../../lib/formatters';
+import { generateDatasetSchema } from '../../lib/seo';
+
+const q = Astro.url.searchParams.get('q') || '';
+const articles = await getArticles(36, q || undefined);
+
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://nhadat.city';
+const schema = generateDatasetSchema(
+  'Cẩm Nang Pháp Lý Nhà Đất & Quy Hoạch Đất Đai Việt Nam',
+  'Tuyển tập các bài viết hướng dẫn chuyên sâu về Luật Đất đai 2024, thủ tục làm sổ đỏ, sang tên, bồi thường giải phóng mặt bằng và giải quyết tranh chấp.',
+  '/phap-ly',
+  siteUrl
+);
+---
+
+<BaseLayout
+  title="Cẩm Nang Pháp Lý Nhà Đất & Quy Hoạch — Chuẩn Luật Đất Đai 2024"
+  description="Chuyên trang tư vấn và hướng dẫn pháp lý bất động sản: thủ tục sang tên sổ đỏ, làm sổ đỏ lần đầu, quy định chuyển mục đích sử dụng đất, bồi thường tái định cư và bảng giá đất mới."
+  schema={schema}
+>
+  <div class="bg-slate-900 text-white py-12 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-slate-400">
+        <Breadcrumb items={[{ name: 'Pháp Lý Nhà Đất', url: '/phap-ly' }]} />
+      </div>
+
+      <div class="mt-4 max-w-3xl">
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-semibold mb-2">
+          <span>Chuẩn Luật Đất Đai 2024</span>
+          <span class="w-1 h-1 rounded-full bg-brand-400"></span>
+          <span>Ban Pháp Lý NhaDat.City</span>
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+          Cẩm Nang Pháp Lý & Thủ Tục Đất Đai
+        </h1>
+        <p class="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed">
+          Tập hợp các tài liệu hướng dẫn quy trình, thủ tục hành chính về cấp Giấy chứng nhận quyền sử dụng đất, giải quyết tranh chấp và nghĩa vụ tài chính đất đai minh bạch.
+        </p>
+
+        <!-- Search Form -->
+        <form method="GET" action="/phap-ly" class="mt-6 flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            name="q"
+            value={q}
+            placeholder="Tìm kiếm bài viết pháp lý, thủ tục sổ đỏ, luật đất đai..."
+            class="px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 flex-1"
+          />
+          <button
+            type="submit"
+            class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-sm transition-colors"
+          >
+            Tìm Kiếm
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div class="flex items-center justify-between text-xs text-slate-500">
+      <span>Hiển thị <strong>{articles.length}</strong> bài viết cẩm nang pháp lý {q ? `cho từ khóa "${q}"` : ''}</span>
+      {q && (
+        <a href="/phap-ly" class="text-brand-600 hover:underline font-semibold">
+          Xóa tìm kiếm
+        </a>
+      )}
+    </div>
+
+    {articles.length === 0 ? (
+      <div class="p-12 text-center bg-white rounded-2xl border border-slate-200 text-slate-500 text-sm">
+        Không tìm thấy bài viết pháp lý nào phù hợp với từ khóa "{q}".
+      </div>
+    ) : (
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {articles.map((art) => (
+          <a
+            href={`/phap-ly/${art.slug}`}
+            class="group bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-brand-500/50 transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div class="flex items-center justify-between text-xs text-slate-400 mb-3">
+                <span>{formatDateVi(art.published_at)}</span>
+                <span>{art.word_count} từ</span>
+              </div>
+
+              <h2 class="text-lg font-bold text-slate-900 group-hover:text-brand-600 transition-colors leading-snug mb-3">
+                {art.title}
+              </h2>
+              <p class="text-xs text-slate-600 leading-relaxed line-clamp-3">
+                {art.summary}
+              </p>
+            </div>
+
+            <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+              <div class="flex gap-2">
+                {(art.tags || []).slice(0, 2).map((t) => (
+                  <span class="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                    #{t}
+                  </span>
+                ))}
+              </div>
+              <span class="text-xs font-semibold text-brand-600 group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                Đọc tiếp &rarr;
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    )}
+  </div>
+</BaseLayout>
