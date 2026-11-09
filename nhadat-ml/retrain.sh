@@ -20,7 +20,7 @@ echo "2. Cập nhật Anomaly Detection..."
 timeout 300s python train_anomaly.py || echo "[WARN] Anomaly Detection training timeout/failed"
 
 echo "3. Restart dịch vụ AI (Zero-Downtime)..."
-pm2 reload nhadat-ml || pm2 start /home/hoan/nhadat-next/ecosystem.config.js --only nhadat-ml || true
+pm2 reload nhadat-ml || pm2 start ecosystem.config.js --only nhadat-ml || true
 
 echo "Hoàn tất cập nhật: $(date)"
 echo "========================================"

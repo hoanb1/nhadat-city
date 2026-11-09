@@ -41,7 +41,7 @@ def run_audit():
     print("Fetching /api/serp/analyze?q=ket+qua+xo+so...")
     results["serp_xoso"] = fetch_json("/api/serp/analyze?q=ket+qua+xo+so")
 
-    with open("/home/hoan/DATA/nhadat-next/scripts/audit_output.json", "w", encoding="utf-8") as f:
+    with open("scripts/audit_output.json", "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
         
     print("Audit complete! Saved to audit_output.json")
